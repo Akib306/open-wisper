@@ -1,0 +1,8 @@
+node_modules/
+.pnpm-store/
+dist/
+release/
+tools/whisper.cpp/
+tools/runtime/
+*.log
+.DS_Store

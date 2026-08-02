@@ -1,0 +1,58 @@
+{
+  "name": "open-wisper",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A local-first macOS dictation MVP powered by Electron and whisper.cpp",
+  "author": "Open Wisper contributors",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc && node scripts/build-renderer.mjs && node scripts/copy-assets.mjs",
+    "dev": "pnpm build && electron .",
+    "start": "electron .",
+    "test": "pnpm build && node --test tests/*.test.cjs",
+    "setup:whisper": "bash scripts/setup-whisper.sh tiny.en-q5_1",
+    "package:mac": "pnpm build && electron-builder --mac dir"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "electron": "^43.2.0",
+    "electron-builder": "^26.0.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.8.0"
+  },
+  "build": {
+    "appId": "dev.akib.openwisper",
+    "productName": "Open Wisper",
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": "dir",
+      "extendInfo": {
+        "LSUIElement": true,
+        "NSMicrophoneUsageDescription": "Open Wisper needs microphone access to transcribe your speech locally."
+      }
+    },
+    "extraResources": [
+      {
+        "from": "tools/runtime",
+        "to": "runtime",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ]
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "electron",
+      "esbuild"
+    ]
+  },
+  "packageManager": "pnpm@10.26.2"
+}

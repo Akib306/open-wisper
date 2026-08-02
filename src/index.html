@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none';" />
+    <title>Open Wisper</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="renderer.js" defer></script>
+  </head>
+  <body data-phase="idle">
+    <main class="shell">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+          <span>Open Wisper</span>
+        </div>
+        <div class="privacy-pill"><span></span> Local only</div>
+      </header>
+
+      <section class="hero" aria-labelledby="status-label">
+        <div class="status-line">
+          <span id="status-dot" class="status-dot idle"></span>
+          <span id="status-label">Ready to dictate</span>
+        </div>
+        <p id="status-message">Your audio and transcript stay on this Mac.</p>
+
+        <div id="level-ring" class="level-ring">
+          <button id="record-button" class="record-button" type="button" aria-label="Start or stop recording">
+            <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
+              <path d="M12 15.5a3.5 3.5 0 0 0 3.5-3.5V5a3.5 3.5 0 1 0-7 0v7a3.5 3.5 0 0 0 3.5 3.5Z" />
+              <path d="M5.75 11.5V12a6.25 6.25 0 0 0 12.5 0v-.5M12 18.25V22M9 22h6" />
+            </svg>
+            <span id="record-button-label">Record</span>
+          </button>
+        </div>
+
+        <div class="shortcut-row">
+          <kbd id="shortcut-label">⌘ ⇧ Space</kbd>
+          <span>works from any app</span>
+        </div>
+      </section>
+
+      <section class="panel transcript-panel">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">Latest transcript</span>
+            <h2>Ready for your words</h2>
+          </div>
+          <div class="actions">
+            <button id="copy-button" class="icon-button" type="button" disabled title="Copy transcript">Copy</button>
+            <button id="paste-button" class="icon-button accent" type="button" disabled title="Paste transcript">Paste</button>
+          </div>
+        </div>
+        <textarea id="transcript" aria-label="Latest transcript" placeholder="Your transcript will appear here. You can edit it before copying or pasting." spellcheck="true"></textarea>
+      </section>
+
+      <section class="metrics" aria-label="Live performance metrics">
+        <article><span>Memory now</span><strong id="memory-metric">—</strong></article>
+        <article><span>Peak memory</span><strong id="peak-metric">—</strong></article>
+        <article><span>Real-time factor</span><strong id="speed-metric">—</strong></article>
+        <article><span>Processes</span><strong id="process-metric">—</strong></article>
+      </section>
+
+      <details class="panel settings-panel">
+        <summary>
+          <span>
+            <span class="eyebrow">Configuration</span>
+            <strong>Engine & behavior</strong>
+          </span>
+          <span id="engine-badge" class="engine-badge">Checking…</span>
+        </summary>
+
+        <div class="settings-content">
+          <div class="field">
+            <label for="binary-path">whisper-cli</label>
+            <div class="path-picker">
+              <input id="binary-path" type="text" readonly />
+              <button id="choose-binary" type="button">Choose</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="model-path">English model</label>
+            <div class="path-picker">
+              <input id="model-path" type="text" readonly />
+              <button id="choose-model" type="button">Choose</button>
+            </div>
+          </div>
+
+          <button id="setup-button" class="setup-button" type="button">
+            <span>Set up tiny.en with whisper.cpp</span>
+            <small>Reveals the included setup script</small>
+          </button>
+
+          <label class="toggle-row">
+            <span><strong>Paste after shortcut dictation</strong><small>Requires macOS Accessibility permission</small></span>
+            <input id="auto-paste" type="checkbox" />
+            <i aria-hidden="true"></i>
+          </label>
+          <label class="toggle-row">
+            <span><strong>Launch at login</strong><small>Available in the packaged app</small></span>
+            <input id="launch-at-login" type="checkbox" />
+            <i aria-hidden="true"></i>
+          </label>
+        </div>
+      </details>
+
+      <footer>English only · 16 kHz PCM · audio deleted after each transcription</footer>
+    </main>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>
