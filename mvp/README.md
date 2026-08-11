@@ -9,7 +9,7 @@ A macOS-first, local dictation MVP built with Electron, TypeScript, and `whisper
 - Microphone capture in Electron, converted in memory to mono 16 kHz PCM WAV.
 - Local English transcription through a short-lived `whisper.cpp` worker.
 - Clipboard delivery and optional paste back into the app that was active when recording started.
-- Live combined memory reporting for every Electron process plus the active transcription worker.
+- Continuous current and peak memory reporting for the complete app process tree, including nested transcription workers.
 - Last-run real-time factor (`transcription time ÷ audio duration`) and peak RAM.
 - Manual paths for using any compatible `whisper-cli` binary or `.bin` model.
 
@@ -58,7 +58,7 @@ Use the same Mac, model file, audio clip, and CPU/Metal setting in both apps. Fo
 4. Real-time factor for the same 10–20 second utterance.
 5. Time until the result reaches the clipboard.
 
-The four counters in the window update once per second. “Memory now” and “Peak memory” aggregate Electron's main, renderer, GPU/utility processes, and the active `whisper-cli` process. macOS may retain shared pages differently between runs, so repeat each measurement three times and compare medians.
+The four counters and process table update once per second. “Memory now” and “Peak memory” aggregate the main process and every descendant, while the table shows current and peak memory for the main, renderer, GPU/utility, `whisper-cli`, and any nested child processes. On macOS these values use physical footprint, the same basis as Activity Monitor's Memory column; other platforms fall back to RSS. Sampling continues in the main process when the window is hidden and accelerates during transcription. Repeat each measurement three times and compare medians.
 
 Expected result: transcription speed should be close when both apps invoke the same `whisper.cpp` binary, while Electron should have clearly higher idle RAM than a native AppKit shell. This MVP deliberately exits `whisper-cli` after each utterance, so the model consumes no idle memory.
 

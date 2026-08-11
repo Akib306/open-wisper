@@ -25,6 +25,8 @@ const elements = {
   peakMetric: byId("peak-metric"),
   speedMetric: byId("speed-metric"),
   processMetric: byId("process-metric"),
+  processList: byId("process-list"),
+  sampleAge: byId("sample-age"),
   engineBadge: byId("engine-badge"),
   binaryPath: byId<HTMLInputElement>("binary-path"),
   modelPath: byId<HTMLInputElement>("model-path"),
@@ -262,6 +264,27 @@ async function updateMetrics(): Promise<void> {
     elements.peakMetric.textContent = `${metrics.peakWorkingSetMb.toFixed(1)} MB`;
     elements.processMetric.textContent = String(metrics.processCount);
     elements.speedMetric.textContent = metrics.realTimeFactor === null ? "—" : `${metrics.realTimeFactor.toFixed(2)}×`;
+    elements.sampleAge.textContent = metrics.sampledAt > 0 ? `${metrics.memoryMeasurement} · Live` : "Sampling…";
+    elements.processList.replaceChildren(...metrics.processes.map((processMetric) => {
+      const row = document.createElement("div");
+      row.className = "process-row";
+
+      const identity = document.createElement("span");
+      identity.className = "process-identity";
+      identity.style.setProperty("--depth", String(processMetric.depth));
+      const name = document.createElement("strong");
+      name.textContent = processMetric.name;
+      const details = document.createElement("small");
+      details.textContent = `${processMetric.type} · PID ${processMetric.pid}`;
+      identity.append(name, details);
+
+      const current = document.createElement("span");
+      current.textContent = `${processMetric.workingSetMb.toFixed(1)} MB`;
+      const peak = document.createElement("span");
+      peak.textContent = `${processMetric.peakWorkingSetMb.toFixed(1)} MB`;
+      row.append(identity, current, peak);
+      return row;
+    }));
   } catch {
     // The window may be shutting down between timer ticks.
   }

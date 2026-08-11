@@ -123,6 +123,22 @@ textarea:focus { border-color: rgba(124, 92, 255, .55); box-shadow: 0 0 0 3px rg
 .metrics span { display: block; overflow: hidden; color: var(--muted); font-size: 9px; white-space: nowrap; text-overflow: ellipsis; }
 .metrics strong { display: block; margin-top: 5px; color: #e8eaf0; font-size: 12px; letter-spacing: -.015em; }
 
+.process-panel { margin-bottom: 10px; overflow: hidden; }
+.process-heading { display: flex; align-items: center; justify-content: space-between; padding: 13px 15px 10px; }
+.process-heading strong { font-size: 13px; }
+.sample-age { display: flex; align-items: center; gap: 6px; color: #7ce3ba; font-size: 9px; font-weight: 700; }
+.sample-age::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px rgba(72, 211, 155, .65); }
+.process-columns, .process-row { display: grid; grid-template-columns: minmax(0, 1fr) 62px 62px; align-items: center; gap: 7px; }
+.process-columns { padding: 0 15px 6px; color: #626c7a; font-size: 8px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.process-columns span:not(:first-child), .process-row > span:not(:first-child) { text-align: right; }
+.process-list { max-height: 190px; overflow-y: auto; border-top: 1px solid var(--line); }
+.process-row { min-height: 43px; padding: 7px 15px; border-bottom: 1px solid rgba(255, 255, 255, .045); color: #ccd1d9; font-size: 9px; font-variant-numeric: tabular-nums; }
+.process-row:last-child { border-bottom: 0; }
+.process-identity { min-width: 0; padding-left: calc(var(--depth) * 11px); }
+.process-identity strong, .process-identity small { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.process-identity strong { color: #dfe3e9; font-size: 10px; }
+.process-identity small { margin-top: 2px; color: #687281; font-size: 8px; }
+
 .settings-panel { overflow: hidden; }
 .settings-panel summary { display: flex; align-items: center; justify-content: space-between; padding: 15px 16px; cursor: pointer; list-style: none; }
 .settings-panel summary::-webkit-details-marker { display: none; }

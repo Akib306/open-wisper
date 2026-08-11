@@ -6,7 +6,7 @@
   "author": "Open Wisper contributors",
   "main": "dist/main.js",
   "scripts": {
-    "build": "tsc && node scripts/build-renderer.mjs && node scripts/copy-assets.mjs",
+    "build": "tsc && node scripts/build-memory-helper.mjs && node scripts/build-renderer.mjs && node scripts/copy-assets.mjs",
     "dev": "pnpm build && electron .",
     "start": "electron .",
     "test": "pnpm build && node --test tests/*.test.cjs",
@@ -36,6 +36,10 @@
       }
     },
     "extraResources": [
+      {
+        "from": "dist/process-memory",
+        "to": "process-memory"
+      },
       {
         "from": "tools/runtime",
         "to": "runtime",

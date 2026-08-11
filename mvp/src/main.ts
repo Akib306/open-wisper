@@ -25,6 +25,13 @@ import {
   Settings,
   TranscriptionResult,
 } from "./shared";
+import {
+  parsePhysicalFootprints,
+  parseProcessTable,
+  PhysicalFootprintSnapshot,
+  ProcessTreeSnapshot,
+  selectProcessTree,
+} from "./process-tree";
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -32,8 +39,11 @@ let isQuitting = false;
 let settingsStore: SettingsStore;
 let phase: AppPhase = "idle";
 let peakWorkingSetMb = 0;
-let activeWhisperPid: number | null = null;
-let activeWhisperRssMb = 0;
+let latestProcessMetrics: PerformanceMetrics["processes"] = [];
+let lastMemorySampleAt = 0;
+let memorySampleTimer: NodeJS.Timeout | null = null;
+let memorySampleInFlight = false;
+const processPeakWorkingSetMb = new Map<number, { name: string; peakMb: number }>();
 let lastTranscriptionMs: number | null = null;
 let lastAudioDurationMs: number | null = null;
 let foregroundBundleId: string | null = null;
@@ -193,6 +203,7 @@ function registerShortcut(accelerator: string): boolean {
 function setPhase(nextPhase: AppPhase): void {
   phase = nextPhase;
   rebuildTrayMenu();
+  scheduleMemorySample(nextPhase === "transcribing" ? 0 : undefined);
 }
 
 function installIpcHandlers(): void {
@@ -281,8 +292,7 @@ function installIpcHandlers(): void {
       lastAudioDurationMs = Math.round(audioDurationMs);
       return { text: cleanTranscript(text), elapsedMs, audioDurationMs } satisfies TranscriptionResult;
     } finally {
-      activeWhisperPid = null;
-      activeWhisperRssMb = 0;
+      void sampleMemoryNow();
     }
   });
 
@@ -324,16 +334,6 @@ async function runWhisper(binaryPath: string, modelPath: string, wavData: Buffer
   try {
     const args = ["-m", modelPath, "-f", wavPath, "-l", "en", "-nt", "-otxt", "-of", outputBase];
     const child = spawn(binaryPath, args, { stdio: ["ignore", "pipe", "pipe"] });
-    activeWhisperPid = child.pid ?? null;
-    const rssSampler = activeWhisperPid === null ? null : setInterval(() => {
-      const pid = activeWhisperPid;
-      if (pid === null) return;
-      void getProcessRssMb(pid).then((rssMb) => {
-        if (activeWhisperPid !== pid) return;
-        activeWhisperRssMb = rssMb;
-        peakWorkingSetMb = Math.max(peakWorkingSetMb, currentElectronWorkingSetMb() + activeWhisperRssMb);
-      });
-    }, 100);
     let stdout = "";
     let stderr = "";
 
@@ -346,15 +346,10 @@ async function runWhisper(binaryPath: string, modelPath: string, wavData: Buffer
       stderr = keepTail(stderr + chunk);
     });
 
-    let exitCode: number;
-    try {
-      exitCode = await new Promise<number>((resolve, reject) => {
-        child.once("error", reject);
-        child.once("close", (code) => resolve(code ?? 1));
-      });
-    } finally {
-      if (rssSampler) clearInterval(rssSampler);
-    }
+    const exitCode = await new Promise<number>((resolve, reject) => {
+      child.once("error", reject);
+      child.once("close", (code) => resolve(code ?? 1));
+    });
 
     if (exitCode !== 0) {
       throw new Error(`whisper-cli exited with code ${exitCode}. ${stderr.trim() || stdout.trim()}`);
@@ -422,13 +417,8 @@ async function runProcess(command: string, args: string[]): Promise<{ code: numb
   return { code, stdout, stderr };
 }
 
-async function collectMetrics(): Promise<PerformanceMetrics> {
-  const electronMetrics = app.getAppMetrics();
-  const electronWorkingSetMb = currentElectronWorkingSetMb(electronMetrics);
-
-  if (activeWhisperPid) activeWhisperRssMb = await getProcessRssMb(activeWhisperPid);
-  const totalWorkingSetMb = electronWorkingSetMb + activeWhisperRssMb;
-  peakWorkingSetMb = Math.max(peakWorkingSetMb, totalWorkingSetMb);
+function collectMetrics(): PerformanceMetrics {
+  const totalWorkingSetMb = latestProcessMetrics.reduce((sum, metric) => sum + metric.workingSetMb, 0);
   const realTimeFactor = lastTranscriptionMs !== null && lastAudioDurationMs
     ? lastTranscriptionMs / lastAudioDurationMs
     : null;
@@ -437,25 +427,133 @@ async function collectMetrics(): Promise<PerformanceMetrics> {
     phase,
     totalWorkingSetMb: roundOne(totalWorkingSetMb),
     peakWorkingSetMb: roundOne(peakWorkingSetMb),
-    processCount: electronMetrics.length + (activeWhisperPid ? 1 : 0),
+    processCount: latestProcessMetrics.length,
+    sampledAt: lastMemorySampleAt,
+    memoryMeasurement: process.platform === "darwin" ? "Physical footprint" : "RSS",
+    processes: latestProcessMetrics,
     lastTranscriptionMs,
     lastAudioDurationMs,
     realTimeFactor: realTimeFactor === null ? null : Math.round(realTimeFactor * 100) / 100,
   };
 }
 
-function currentElectronWorkingSetMb(metrics = app.getAppMetrics()): number {
-  return metrics.reduce((sum, metric) => sum + metric.memory.workingSetSize / 1024, 0);
+function startMemorySampler(): void {
+  void sampleMemoryNow();
+  scheduleMemorySample();
 }
 
-async function getProcessRssMb(pid: number): Promise<number> {
+function scheduleMemorySample(delayMs = phase === "transcribing" ? 200 : 1_000): void {
+  if (isQuitting) return;
+  if (memorySampleTimer) clearTimeout(memorySampleTimer);
+  memorySampleTimer = setTimeout(async () => {
+    memorySampleTimer = null;
+    await sampleMemoryNow();
+    scheduleMemorySample();
+  }, delayMs);
+}
+
+async function sampleMemoryNow(): Promise<void> {
+  if (memorySampleInFlight) return;
+  memorySampleInFlight = true;
   try {
-    const result = await runProcess("/bin/ps", ["-o", "rss=", "-p", String(pid)]);
-    const rssKb = Number.parseInt(result.stdout.trim(), 10);
-    return Number.isFinite(rssKb) ? rssKb / 1024 : 0;
-  } catch {
-    return 0;
+    const electronMetrics = app.getAppMetrics();
+    const processTree = await getProcessTree(process.pid);
+    const physicalFootprints = process.platform === "darwin"
+      ? await getPhysicalFootprints(processTree.map((snapshot) => snapshot.pid))
+      : new Map<number, PhysicalFootprintSnapshot>();
+    const electronByPid = new Map(electronMetrics.map((metric) => [metric.pid, metric]));
+    const snapshots = processTree.length > 0
+      ? processTree
+      : electronMetrics.map((metric) => ({
+          pid: metric.pid,
+          parentPid: metric.pid === process.pid ? process.ppid : process.pid,
+          rssKb: metric.memory.workingSetSize,
+          command: metric.name ?? metric.type,
+          depth: metric.pid === process.pid ? 0 : 1,
+        }));
+
+    const activePids = new Set<number>();
+    latestProcessMetrics = snapshots.map((snapshot) => {
+      activePids.add(snapshot.pid);
+      const electronMetric = electronByPid.get(snapshot.pid);
+      const name = processDisplayName(snapshot, electronMetric);
+      const footprint = physicalFootprints.get(snapshot.pid);
+      const workingSetMb = footprint ? footprint.currentBytes / 1024 / 1024 : snapshot.rssKb / 1024;
+      const previousPeak = processPeakWorkingSetMb.get(snapshot.pid);
+      const reportedPeakMb = footprint ? footprint.peakBytes / 1024 / 1024 : workingSetMb;
+      const peakMb = previousPeak?.name === name
+        ? Math.max(previousPeak.peakMb, reportedPeakMb, workingSetMb)
+        : Math.max(reportedPeakMb, workingSetMb);
+      processPeakWorkingSetMb.set(snapshot.pid, { name, peakMb });
+      return {
+        pid: snapshot.pid,
+        parentPid: snapshot.parentPid,
+        depth: snapshot.depth,
+        name,
+        type: electronMetric?.type ?? (snapshot.pid === process.pid ? "Browser" : "Child"),
+        workingSetMb: roundOne(workingSetMb),
+        peakWorkingSetMb: roundOne(peakMb),
+      };
+    });
+
+    for (const pid of processPeakWorkingSetMb.keys()) {
+      if (!activePids.has(pid)) processPeakWorkingSetMb.delete(pid);
+    }
+
+    const totalWorkingSetMb = latestProcessMetrics.reduce((sum, metric) => sum + metric.workingSetMb, 0);
+    peakWorkingSetMb = Math.max(peakWorkingSetMb, totalWorkingSetMb);
+    lastMemorySampleAt = Date.now();
+  } finally {
+    memorySampleInFlight = false;
   }
+}
+
+async function getPhysicalFootprints(pids: number[]): Promise<Map<number, PhysicalFootprintSnapshot>> {
+  if (pids.length === 0) return new Map();
+
+  try {
+    const helperPath = app.isPackaged
+      ? path.join(process.resourcesPath, "process-memory")
+      : path.join(__dirname, "process-memory");
+    const result = await runProcess(helperPath, pids.map(String));
+    return result.code === 0 ? parsePhysicalFootprints(result.stdout) : new Map();
+  } catch {
+    return new Map();
+  }
+}
+
+async function getProcessTree(rootPid: number): Promise<ProcessTreeSnapshot[]> {
+  if (process.platform === "win32") return [];
+
+  try {
+    const child = spawn("/bin/ps", ["-axo", "pid=,ppid=,rss=,comm="], { stdio: ["ignore", "pipe", "ignore"] });
+    const samplerPid = child.pid;
+    let stdout = "";
+    child.stdout.setEncoding("utf8");
+    child.stdout.on("data", (chunk: string) => { stdout += chunk; });
+    const code = await new Promise<number>((resolve, reject) => {
+      child.once("error", reject);
+      child.once("close", (exitCode) => resolve(exitCode ?? 1));
+    });
+    if (code !== 0) return [];
+    return selectProcessTree(
+      parseProcessTable(stdout),
+      rootPid,
+      samplerPid === undefined ? new Set() : new Set([samplerPid]),
+    );
+  } catch {
+    return [];
+  }
+}
+
+function processDisplayName(snapshot: ProcessTreeSnapshot, electronMetric?: Electron.ProcessMetric): string {
+  if (electronMetric?.type === "Browser") return "Open Wisper";
+  if (electronMetric?.type === "Tab") return "Renderer";
+  if (electronMetric?.type === "GPU") return "GPU";
+  if (electronMetric?.name) return electronMetric.name;
+  if (electronMetric?.serviceName) return electronMetric.serviceName;
+  if (electronMetric) return electronMetric.type;
+  return path.basename(snapshot.command) || snapshot.command;
 }
 
 function roundOne(value: number): number {
@@ -495,6 +593,7 @@ app.whenReady().then(async () => {
     return permission === "media" && details.mediaType === "audio";
   });
   installIpcHandlers();
+  startMemorySampler();
   mainWindow = createWindow();
   tray = createTray();
   app.dock?.hide();
@@ -516,6 +615,7 @@ app.whenReady().then(async () => {
 app.on("activate", showWindow);
 app.on("before-quit", () => {
   isQuitting = true;
+  if (memorySampleTimer) clearTimeout(memorySampleTimer);
   globalShortcut.unregisterAll();
 });
 app.on("window-all-closed", () => {

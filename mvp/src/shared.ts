@@ -22,9 +22,22 @@ export interface PerformanceMetrics {
   totalWorkingSetMb: number;
   peakWorkingSetMb: number;
   processCount: number;
+  sampledAt: number;
+  memoryMeasurement: "Physical footprint" | "RSS";
+  processes: ProcessMemoryMetric[];
   lastTranscriptionMs: number | null;
   lastAudioDurationMs: number | null;
   realTimeFactor: number | null;
+}
+
+export interface ProcessMemoryMetric {
+  pid: number;
+  parentPid: number;
+  depth: number;
+  name: string;
+  type: string;
+  workingSetMb: number;
+  peakWorkingSetMb: number;
 }
 
 export interface TranscriptionResult {
