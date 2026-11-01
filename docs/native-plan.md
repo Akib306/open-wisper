@@ -1,6 +1,6 @@
 # Independent Rust and Swift implementation plan
 
-Status: **design only**. Read the [investigation](research/wispr-flow.md) for observations and [v1 contract](native-contract.md) for proposed behavior. Neither native application is implemented in this change.
+Status: **Swift development baseline implemented; Rust remains planned**. Read the [investigation](research/wispr-flow.md) for observations and [v1 contract](native-contract.md) for the target behavior. [Swift verification status](swift-status.md) distinguishes implemented features, completed checks, and open release gates. The later experiments and optional capabilities below remain plans.
 
 ## Decision
 
@@ -19,8 +19,8 @@ Do not claim Rust or Swift will be faster, smaller, or more reliable before meas
 
 | Priority | Capability | Relation to investigation |
 | --- | --- | --- |
-| P0 | Shortcut → visible capture → local ASR → review/Copy | Core dictation workflow; local inference is intentionally different from observed remote-capable paths. |
-| P0 | Focus-safe optional insertion, cancellation, permission recovery | Native integration boundary F02/F03 and guarded initialization F06. |
+| P0 | Shortcut → visible capture → local ASR → cursor insertion | Core workflow clarified by the user on October 31; review/Copy is a quiet fallback. Local inference is intentionally different from observed remote-capable paths. |
+| P0 | Guarded insertion, cancellation, permission recovery | Native integration boundary F02/F03 and guarded initialization F06. |
 | P0 | Reproducible manifests and comparable resource measurements | Existing MVP provides a baseline, not native results. |
 | P1 | Hold-to-talk, device recovery, vocabulary, deterministic snippets | Candidate feature surfaces F09; independently specified behavior. |
 | P1 | Optional local rewrite with raw-result fallback and per-app style rules | Separate ASR/formatting stages suggested by F07/F08; no recovered proprietary prompts. |
@@ -73,7 +73,7 @@ Concentrate unsafe Objective-C/FFI code in a small platform layer with documente
 | Coordination | Swift actor or dedicated serial coordinator, with explicit async commands and session-tagged results; UI mutations on MainActor. |
 | Shortcuts | Small registered-combination adapter; verify actual key registration, conflicts, and rollback. Only investigate CGEvent taps if required for later hold/Fn behavior. |
 | Delivery | Independently authored AXUIElement/Core Graphics/NSPasteboard adapter with the same fail-closed contract as Rust. |
-| Worker | Foundation Process supervisor with bounded concurrent pipe reads, timeout/cancel state, termination escalation, and final exit handling. |
+| Worker | Implemented with POSIX spawn from Swift so a process group is established atomically; bounded pipe reads, timeout/cancel state, termination escalation, and final exit handling. |
 | Persistence | Validated atomic settings; optional SQLite-compatible history later. No mandatory Rust runtime/library. |
 
 Swift has the simpler proposed macOS integration route; Rust offers a route toward reusable non-UI logic across platforms. These are design trade-offs, not measured development-effort or performance findings.
@@ -129,7 +129,7 @@ Advance on acceptance gates rather than speculative calendar estimates. Once sha
 | C1 | C0 | Pin inference commit/build/model; create one idempotent provisioning command and offline-import path. | Existing installations verify hashes; both tracks consume the identical manifest without duplicate downloads. |
 | R1 / S1 | C0 | Independently package status app, permission status, registered shortcut, nonactivating indicator, capture start/stop. | Fresh packaged-build test proves permission behavior, indicator focus, denial recovery, and bounded capture. |
 | R2 / S2 | C1, R1/S1 | Supervised CLI transcription and review/Copy. | End-to-end local dictation works offline; cancellation, timeout, quit, and file cleanup pass. |
-| R3 / S3 | R2/S2 | Safe target snapshot/validation and optional insertion. | Native field/browser/terminal/focus-race/clipboard suite passes with no ambiguous auto-retry. |
+| R3 / S3 | R2/S2 | Target snapshot at Stop, validation, cursor insertion, quiet fallback. | Native field/browser/terminal/focus-race/clipboard suite passes with no ambiguous auto-retry. |
 | C2 | R2, S2 | External benchmark runner; release packaging and shared prerecorded corpus. | Raw results include engine hashes, cold/warm labels, all child processes, metric basis, and failure counts. |
 | R4 / S4 | R3/S3, C2 | Hardening: device changes, sleep/wake, settings, hotkey rollback, startup recovery, launch-at-login opt-in. | Shared lifecycle suite and packaged permission/update checks pass. |
 | C3 | R4, S4 | Compare results and maintenance friction; choose default distribution track. | Decision uses reproducible measurements plus reliability and implementation effort, not language preference alone. |

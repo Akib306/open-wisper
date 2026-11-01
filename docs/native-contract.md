@@ -1,6 +1,6 @@
 # Native v1 behavior contract
 
-Status: **proposed**, not implemented. Applies equally to Rust and Swift. This is our product contract, not a recovered Wispr specification.
+Status: **v1 target contract**. The [Swift baseline](../native/swift/README.md) implements the core workflow; [verification status](swift-status.md) records remaining conformance and release work. Rust remains planned. This is our product contract, not a recovered Wispr specification.
 
 ## Product boundary
 
@@ -8,7 +8,7 @@ Status: **proposed**, not implemented. Applies equally to Rust and Swift. This i
 - Menu-bar application, settings/result review window, and a nonactivating recording indicator.
 - Configurable registered combination shortcut; default `Command+Shift+Space`. Toggle recording first; hold-to-talk and Fn-only are later capabilities.
 - Local transcription after explicit engine/model provisioning. No account, service key, subscription, or runtime download required for baseline dictation.
-- Explicit result review/Copy always works when capture and inference work. Auto-insertion is opt-in and may fail closed.
+- Cursor insertion is the default workflow, following the user's October 31 correction. One explicit Accessibility setup enables delivery; explicit review/Copy remains available. Completion never activates the app automatically.
 - Start with the same English model as the Electron baseline. Multilingual support is a separate tested profile.
 
 ## Ports
@@ -61,13 +61,13 @@ The primary proposed fixture profile is `whisper.cpp` v1.8.1 / `tiny.en-q5_1`, m
 
 ## Delivery safety
 
-1. Snapshot target PID plus process-start identity, bundle identifier, focused element, role/editability, and available selection context when invocation occurs. Avoid reading surrounding text unless necessary and consented.
-2. The indicator must not activate its own app. If invocation begins in our settings window, require an explicit target/review action rather than guessing a previous app.
+1. Snapshot target PID plus process-start identity, bundle identifier, focused element, role/editability, and selection context when recording stops, before asynchronous finalization/inference. This lets the user position the cursor while speaking. Avoid reading surrounding text.
+2. The indicator must not activate its own app. If Stop occurs in our settings/review window, require an explicit target/review action rather than guessing a previous app. Completion, including errors or blocked insertion, presents a nonactivating indicator; only an explicit Review action opens the app.
 3. Immediately before insertion, revalidate target/process/focus and secure-field policy. Changed, unknown, inaccessible, or secure contexts fall back to review. Do not reactivate another app or paste into a newly focused field.
-4. Attempt selected-text replacement only where the focused AX element supports it and the adapter has been validated. Never replace an entire document using a whole-value write as a fallback.
-5. Command-V fallback is separately opt-in. It temporarily changes the clipboard, rechecks focus, and reports an input request rather than claiming observed insertion. There remains an unavoidable focus race between validation and injected input; treat this as a risk, not a safety guarantee.
+4. Attempt selected-text replacement only where the focused AX element supports it and the adapter has been validated. Web content identified by an `AXWebArea` ancestor uses Paste instead: reported AX writability alone does not validate a web editor's insertion behavior. Never replace an entire document using a whole-value write as a fallback.
+5. The insertion setting includes one Command-V for web content or an editable field without supported selected-text replacement. It temporarily changes the clipboard, rechecks focus immediately before posting to the captured process, and reports an input request rather than claiming observed insertion. If Paste cannot be prepared for web content, offer Copy rather than trying an unvalidated AX write. A timed-out AX write must never trigger Paste. There remains an unavoidable focus race between validation and injected input; treat this as a risk, not a safety guarantee.
 6. Never press Return, execute a terminal command, submit a form, retry an ambiguous insertion, or deliver twice. In terminals, block automatic insertion of multiline/control-character content; offer Copy/review instead.
-7. Snapshot/restore clipboard data only within explicit size/type bounds and only if its change counter and our marker still match. Otherwise leave the user's newer clipboard alone. Do not promise universal clipboard restoration or use a fixed sleep as evidence of consumption.
+7. Snapshot/restore clipboard data only within explicit size/type bounds and only if its change counter and our marker still match. Otherwise leave the user's newer clipboard alone. Supply transcript text lazily, waiting up to two seconds for a data request before restoring; after a request, allow a further 500 ms grace period. Marker/ownership reads must not count as transcript reads. Cancellation or lost clipboard ownership ends the wait without another input request. A data request can come from a clipboard manager and is not proof of editor insertion. Do not promise universal clipboard restoration or use a fixed sleep as evidence of consumption.
 8. Distinguish `reviewReady`, `copied`, `insertionRequested`, `insertionVerified`, `blocked`, `cancelled`, and `failed`. AX success or Command-V emission alone is not proof of the final editor text.
 
 On an insertion attempt, atomically consume a session-scoped delivery authorization. Late duplicate callbacks and transport timeouts cannot acquire it again. An ambiguous outcome remains ambiguous until a safe readback or user decision resolves it.
