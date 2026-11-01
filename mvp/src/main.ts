@@ -13,7 +13,7 @@ import {
   Tray,
 } from "electron";
 import { spawn } from "node:child_process";
-import { accessSync, constants, existsSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { accessSync, constants, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import {
@@ -32,6 +32,13 @@ import {
   ProcessTreeSnapshot,
   selectProcessTree,
 } from "./process-tree";
+
+// Keep existing settings when the visible application name changes.
+const existingUserData = path.join(app.getPath("appData"), "open-wisper");
+mkdirSync(existingUserData, { recursive: true });
+app.setPath("userData", existingUserData);
+app.setName("Open Wisper Electron");
+const primaryInstance = app.requestSingleInstanceLock();
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -127,7 +134,7 @@ function createWindow(): BrowserWindow {
     minHeight: 620,
     show: false,
     resizable: true,
-    title: "Open Wisper",
+    title: "Open Wisper Electron",
     titleBarStyle: "hiddenInset",
     backgroundColor: "#0b0e14",
     webPreferences: {
@@ -166,7 +173,7 @@ function showWindow(): void {
 function createTray(): Tray {
   const statusTray = new Tray(nativeImage.createEmpty());
   statusTray.setTitle("●");
-  statusTray.setToolTip("Open Wisper");
+  statusTray.setToolTip("Open Wisper Electron");
   statusTray.on("click", showWindow);
   rebuildTrayMenu(statusTray);
   return statusTray;
@@ -186,7 +193,7 @@ function rebuildTrayMenu(statusTray = tray): void {
       click: () => sendRecordingCommand(isRecording ? "stop" : "start", "tray"),
     },
     { type: "separator" },
-    { label: "Open Open Wisper", click: showWindow },
+    { label: "Open Wisper Electron", click: showWindow },
     { label: "Quit", click: () => app.quit() },
   ]));
 }
@@ -582,42 +589,47 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-app.whenReady().then(async () => {
-  settingsStore = new SettingsStore();
-  session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback, details) => {
-    const mediaDetails = details as { mediaTypes?: string[] };
-    const isAudioRequest = permission === "media" && mediaDetails.mediaTypes?.includes("audio");
-    callback(Boolean(isAudioRequest));
+if (!primaryInstance) {
+  app.quit();
+} else {
+  app.on("second-instance", showWindow);
+  app.whenReady().then(async () => {
+    settingsStore = new SettingsStore();
+    session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback, details) => {
+      const mediaDetails = details as { mediaTypes?: string[] };
+      const isAudioRequest = permission === "media" && mediaDetails.mediaTypes?.includes("audio");
+      callback(Boolean(isAudioRequest));
+    });
+    session.defaultSession.setPermissionCheckHandler((_webContents, permission, _requestingOrigin, details) => {
+      return permission === "media" && details.mediaType === "audio";
+    });
+    installIpcHandlers();
+    startMemorySampler();
+    mainWindow = createWindow();
+    tray = createTray();
+    app.dock?.hide();
+
+    if (!registerShortcut(settingsStore.get().shortcut)) {
+      settingsStore.update({ shortcut: "CommandOrControl+Shift+Space" });
+    }
+
+    const microphoneStatus = process.platform === "darwin"
+      ? systemPreferences.getMediaAccessStatus("microphone")
+      : "unknown";
+    if (microphoneStatus === "not-determined" && process.platform === "darwin") {
+      await systemPreferences.askForMediaAccess("microphone");
+    }
+
+    mainWindow.once("ready-to-show", () => mainWindow?.show());
   });
-  session.defaultSession.setPermissionCheckHandler((_webContents, permission, _requestingOrigin, details) => {
-    return permission === "media" && details.mediaType === "audio";
+
+  app.on("activate", showWindow);
+  app.on("before-quit", () => {
+    isQuitting = true;
+    if (memorySampleTimer) clearTimeout(memorySampleTimer);
+    globalShortcut.unregisterAll();
   });
-  installIpcHandlers();
-  startMemorySampler();
-  mainWindow = createWindow();
-  tray = createTray();
-  app.dock?.hide();
-
-  if (!registerShortcut(settingsStore.get().shortcut)) {
-    settingsStore.update({ shortcut: "CommandOrControl+Shift+Space" });
-  }
-
-  const microphoneStatus = process.platform === "darwin"
-    ? systemPreferences.getMediaAccessStatus("microphone")
-    : "unknown";
-  if (microphoneStatus === "not-determined" && process.platform === "darwin") {
-    await systemPreferences.askForMediaAccess("microphone");
-  }
-
-  mainWindow.once("ready-to-show", () => mainWindow?.show());
-});
-
-app.on("activate", showWindow);
-app.on("before-quit", () => {
-  isQuitting = true;
-  if (memorySampleTimer) clearTimeout(memorySampleTimer);
-  globalShortcut.unregisterAll();
-});
-app.on("window-all-closed", () => {
-  // A menu-bar app intentionally stays alive after its control window closes.
-});
+  app.on("window-all-closed", () => {
+    // A menu-bar app intentionally stays alive after its control window closes.
+  });
+}

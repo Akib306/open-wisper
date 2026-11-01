@@ -22,7 +22,7 @@
   },
   "build": {
     "appId": "dev.akib.openwisper",
-    "productName": "Open Wisper",
+    "productName": "Open Wisper Electron",
     "files": [
       "dist/**/*",
       "package.json"

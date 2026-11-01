@@ -1,4 +1,4 @@
-# Open Wisper MVP
+# Open Wisper Electron MVP
 
 A macOS-first, local dictation MVP built with Electron, TypeScript, and `whisper.cpp`. It is intentionally small and dependency-light so you can compare its shell overhead against the planned Swift/AppKit version while keeping the transcription engine the same.
 
@@ -26,7 +26,7 @@ pnpm setup:whisper          # builds CPU-only whisper.cpp and downloads tiny.en-
 pnpm dev
 ```
 
-On first launch, allow Microphone access. For automatic paste, also allow the Electron/Open Wisper process in **System Settings → Privacy & Security → Accessibility**. Without Accessibility access, every successful transcript is still copied to the clipboard.
+On first launch, allow Microphone access. For automatic paste, also allow the Open Wisper Electron process in **System Settings → Privacy & Security → Accessibility**. Without Accessibility access, every successful transcript is still copied to the clipboard.
 
 The setup script pins `whisper.cpp` v1.8.1 and builds with Metal off so the initial memory comparison favors predictable CPU-only measurements. Override the model or source version when needed:
 
@@ -43,8 +43,10 @@ After switching models, choose the new `.bin` file in **Engine & behavior**.
 pnpm dev          # compile and run
 pnpm test         # compile and run audio pipeline tests
 pnpm build        # compile only
-pnpm package:mac  # unsigned local .app in dist/mac-arm64
+pnpm package:mac  # local .app at dist/mac-arm64/Open Wisper Electron.app
 ```
+
+The installed comparison build is `/Applications/Open Wisper Electron.app`. Only one Electron instance runs per user; opening a second copy shows the existing window. Settings remain in `~/Library/Application Support/open-wisper` when renaming the app, independently of Swift settings.
 
 The packaged build is for local use and does not require the paid Apple Developer Program. Gatekeeper warnings are expected for an unsigned build copied to another Mac.
 
