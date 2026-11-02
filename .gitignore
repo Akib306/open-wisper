@@ -3,4 +3,5 @@ native/swift/.build/
 native/swift/.swiftpm/
 native/swift/dist/
 tools/engine/runtime/
+tools/engine/__pycache__/
 .impeccable/review/

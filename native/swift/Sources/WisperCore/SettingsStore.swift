@@ -33,15 +33,31 @@ public struct HotkeyCombination: Codable, Equatable, Sendable {
     }
 }
 
+public enum WhisperModel: String, Codable, Sendable, CaseIterable {
+    case tiny = "tiny.en-q5_1"
+    case base = "base.en"
+    case small = "small.en"
+    case custom
+}
+
 public struct AppSettings: Codable, Equatable, Sendable {
     public var version = 2
     public var engineProfilePath = ""
+    public var whisperModel: WhisperModel?
     public var hotkey = HotkeyCombination()
     public var automaticInsertion = true
     public var workerTimeout: TimeInterval = 120
     public var maximumDuration: TimeInterval = 300
 
     public init() {}
+
+    public mutating func resolveModelProfile(resources: URL?) {
+        if whisperModel == nil {
+            whisperModel = engineProfilePath.isEmpty || engineProfilePath.hasSuffix(".app/Contents/Resources/engine-profile.json") ? .base : .custom
+        }
+        guard let model = whisperModel, model != .custom else { return }
+        engineProfilePath = resources?.appendingPathComponent("engine-profile-\(model.rawValue).json").path ?? ""
+    }
 
     /// Bundled profiles move with the app; custom external profiles keep their paths.
     public mutating func resolveBundledProfile(_ bundledURL: URL?) {

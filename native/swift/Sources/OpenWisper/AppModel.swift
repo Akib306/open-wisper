@@ -25,6 +25,7 @@ extension WhisperTranscriber: Transcriber {}
     var onNeedsWindow: (() -> Void)?
     private var settingsWritable = true
     private var verification: Task<Void, Never>?
+    private var hashVerification: Task<String, Error>?
     private var settingsGeneration = UUID()
 
     init(profileURL: URL? = nil, preview: Bool = false) {
@@ -34,8 +35,8 @@ extension WhisperTranscriber: Transcriber {}
         var loadError: String?
         do { initial = try store.load() }
         catch { loadError = "Settings could not be loaded. Your file has been preserved. \(error.localizedDescription)" }
-        if let profileURL { initial.engineProfilePath = profileURL.path }
-        else { initial.resolveBundledProfile(Bundle.main.url(forResource: "engine-profile", withExtension: "json")) }
+        if let profileURL { initial.engineProfilePath = profileURL.path; initial.whisperModel = .custom }
+        else { initial.resolveModelProfile(resources: Bundle.main.resourceURL) }
         self.settings = initial
         self.notice = loadError
         self.settingsWritable = loadError == nil
@@ -111,11 +112,21 @@ extension WhisperTranscriber: Transcriber {}
         guard picker.runModal() == .OK, let url = picker.url else { return }
         var updated = settings
         updated.engineProfilePath = url.path
+        updated.whisperModel = .custom
+        save(updated)
+    }
+
+    func chooseModel(_ model: WhisperModel) {
+        if model == .custom { chooseProfile(); return }
+        var updated = settings
+        updated.whisperModel = model
+        updated.resolveModelProfile(resources: Bundle.main.resourceURL)
         save(updated)
     }
 
     func verifyEngine() {
         verification?.cancel()
+        hashVerification?.cancel()
         engineReady = false
         guard !settings.engineProfilePath.isEmpty else {
             engineDescription = "Choose a local engine profile to get started."
@@ -126,13 +137,15 @@ extension WhisperTranscriber: Transcriber {}
         settingsGeneration = generation
         checkingEngine = true
         engineDescription = "Verifying engine and model…"
+        let hashTask = Task.detached(priority: .utility) {
+            try EngineProfileCheck.check(url)
+        }
+        hashVerification = hashTask
         verification = Task { [weak self] in
             do {
                 // Hash verification runs off the main actor. The worker also
                 // revalidates the profile immediately before every invocation.
-                let description = try await Task.detached(priority: .utility) {
-                    try EngineProfileCheck.check(url)
-                }.value
+                let description = try await hashTask.value
                 guard let self, self.settingsGeneration == generation, !Task.isCancelled else { return }
                 self.engineDescription = description
                 self.engineReady = true
@@ -154,6 +167,7 @@ extension WhisperTranscriber: Transcriber {}
     func shutdown() async {
         hotkeys?.invalidate()
         verification?.cancel()
+        hashVerification?.cancel()
         await coordinator.shutdown()
     }
 }

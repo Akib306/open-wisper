@@ -1,5 +1,17 @@
 # Swift implementation and verification
 
+## Three-model packaging — November 2, 2026
+
+The native app now defaults to `base.en` and bundles it alongside `tiny.en-q5_1` and `small.en`. The idle-only Settings picker persists the selected offline model; legacy external custom profiles remain selected. Packaging downloads only missing model weights at the pinned revision, verifies cached/downloaded hashes, and uses relative bundle profiles. The bootstrap provisioner's existing small-model profile and the installed Electron configuration are unchanged.
+
+Validation: **86 Swift tests across 15 suites**, **9 Python packaging tests**, release build, shell syntax, and whitespace checks passed. The first full Swift run missed an unchanged cancellation timing assertion by approximately 13 ms; that test passed in isolation and the unchanged full suite passed afterward. No timeout was relaxed. Packaging tests cover successful, corrupt and interrupted downloads, HTTPS-only redirects, readable file modes, system-only dynamic dependencies, and hashes computed after nested signing.
+
+A complete ad-hoc-signed test bundle was built and moved to `/private/tmp/open-wisper-model-validation/Final Wisper.app`. All three bundled profiles passed engine/model hash validation and successfully transcribed upstream `samples/jfk.wav` through the app's transcriber after relocation. Recursive strict signature verification passed. The bundled worker uses `0755`; models and profiles use `0644`. Settings were rendered and visually inspected with the new Base-default picker. Missing-profile and nonexistent-signing-identity failures preserved the previous test app and its valid signature. No replacement of `/Applications/Open Wisper Swift.app` or live microphone recording was performed.
+
+Independent review identified unsafe in-place packaging, unreadable downloads, imported dynamic dependencies, nested signing/hash ordering, and overly broad legacy custom-profile migration; these were corrected and the relevant regression/runtime checks repeated. Superseded background hash tasks are also cancelled. Certificate-backed permission continuity, hardened runtime/notarization, live dropdown interaction, and controlled recognition-quality/latency/memory comparisons remain unverified. OTA updates are researched, not enabled; see [macOS update findings](macos-updates.md) and [model implementation plan](native-model-selection-plan.md).
+
+The earlier checkpoints below are historical and describe the configuration at their recorded dates.
+
 Checkpoint: October 31, 2026. Implementation: `native/swift`. This is an independently authored development baseline based on the native plan, not a parity claim about Wispr Flow.
 
 ## What the implementation covers

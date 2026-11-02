@@ -2,6 +2,38 @@ import Foundation
 import Testing
 @testable import WisperCore
 
+@Suite("Whisper model selection")
+struct WhisperModelSettingsTests {
+    @Test func legacyCustomProfileInsideAnotherBundleIsPreserved() {
+        var settings = AppSettings()
+        settings.engineProfilePath = "/Applications/Other.app/Contents/Resources/engine-profile-custom.json"
+        settings.resolveModelProfile(resources: URL(fileURLWithPath: "/Applications/Wisper.app/Contents/Resources"))
+        #expect(settings.whisperModel == .custom)
+        #expect(settings.engineProfilePath == "/Applications/Other.app/Contents/Resources/engine-profile-custom.json")
+    }
+
+    @Test func legacySettingsPreserveCustomAndDefaultBundledToBase() throws {
+        let legacy = Data("""
+        {"version":2,"engineProfilePath":"/custom/profile.json","hotkey":{"keyCode":49,"modifiers":3},"automaticInsertion":true,"workerTimeout":120,"maximumDuration":300}
+        """.utf8)
+        var settings = try JSONDecoder().decode(AppSettings.self, from: legacy)
+        let resources = URL(fileURLWithPath: "/Applications/Open Wisper.app/Contents/Resources")
+        settings.resolveModelProfile(resources: resources)
+        #expect(settings.whisperModel == .custom)
+        #expect(settings.engineProfilePath == "/custom/profile.json")
+        settings.engineProfilePath = "/old/App.app/Contents/Resources/engine-profile.json"
+        settings.whisperModel = nil
+        settings.resolveModelProfile(resources: resources)
+        #expect(settings.whisperModel == .base)
+        #expect(settings.engineProfilePath.hasSuffix("/engine-profile-base.en.json"))
+        settings.whisperModel = .small
+        settings.resolveModelProfile(resources: resources)
+        let restored = try JSONDecoder().decode(AppSettings.self, from: JSONEncoder().encode(settings))
+        #expect(restored.whisperModel == .small)
+        #expect(restored.engineProfilePath.hasSuffix("/engine-profile-small.en.json"))
+    }
+}
+
 @Suite("Fail-closed delivery policy")
 struct DeliveryPolicyTests {
     func context() -> InsertionContext {

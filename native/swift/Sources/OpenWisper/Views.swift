@@ -227,6 +227,15 @@ private struct TranscriptionMemoryView: View {
     var body: some View {
         Form {
             Section("Transcription engine") {
+                Picker("Offline Whisper model", selection: Binding(
+                    get: { model.settings.whisperModel ?? .base },
+                    set: { model.chooseModel($0) }
+                )) {
+                    Text("Tiny English (fastest)").tag(WhisperModel.tiny)
+                    Text("Base English (default)").tag(WhisperModel.base)
+                    Text("Small English").tag(WhisperModel.small)
+                    Text("Custom profile…").tag(WhisperModel.custom)
+                }
                 Text(model.engineDescription).font(.callout).foregroundStyle(model.engineReady ? .secondary : .primary)
                     .fixedSize(horizontal: false, vertical: true)
                 if !model.settings.engineProfilePath.isEmpty {
@@ -239,7 +248,7 @@ private struct TranscriptionMemoryView: View {
                         .disabled(model.settings.engineProfilePath.isEmpty || model.checkingEngine)
                     if model.checkingEngine { ProgressView().controlSize(.small) }
                 }
-                Text("Use the profile created by the engine setup command in the Swift README. Setup is done once; dictation works offline.")
+                Text("Whisper runs offline on this Mac; this is not Apple Speech Recognition. Model changes are available when dictation is idle.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section("Keyboard shortcut") {

@@ -4,6 +4,17 @@ import Testing
 
 @Suite("Engine profiles and transcription")
 struct EngineManifestTests {
+    @Test func baseEnglishProfileTranscribesAndChecksIntegrity() async throws {
+        let fixture = try EngineFixture()
+        try fixture.writeManifest {
+            var model = $0["model"] as! [String: Any]
+            model["name"] = "base.en"
+            $0["model"] = model
+        }
+        #expect(try await fixture.transcribe().text == "fixture transcript")
+        try Data("changed".utf8).write(to: fixture.model)
+        #expect(throws: EngineError.integrityMismatch) { try EngineManifest.loadValidated(from: fixture.profile) }
+    }
     @Test func publicLoadAndHashValidation() throws {
         let fixture = try EngineFixture()
         let manifest = try EngineManifest.load(from: fixture.profile)

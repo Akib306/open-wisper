@@ -2,12 +2,13 @@
 
 An open-source, local-first macOS dictation project. A native Swift menu-bar application and the Electron reference MVP are implemented. An independent Rust application remains planned.
 
-**Experimental:** The native app and its current `small.en` configuration are evaluation builds, not a validated final model choice. In the next iteration we will switch to `base.en` and test recognition quality, transcription latency, and peak memory using the same recordings. No controlled `small.en`-versus-`base.en` results are claimed yet.
+**Experimental:** The native app bundles three offline Whisper models: `tiny.en-q5_1`, `base.en` (default), and `small.en`. Choose a model in Settings while dictation is idle. These remain evaluation builds; no controlled accuracy, latency, or memory comparison is claimed yet.
 
 ## Start here
 
 - [Native Swift app](native/swift/README.md): build, launch, local engine setup, and usage.
 - [Swift verification status](docs/swift-status.md): completed checks and remaining release gates.
+- [macOS updates and permissions](docs/macos-updates.md): stable signing and the proposed OTA update workflow.
 - [Installed Wispr Flow investigation](docs/research/wispr-flow.md): artifact-backed findings, provenance, and remaining unknowns.
 - [Rust and Swift implementation plan](docs/native-plan.md): architecture decisions, implementation tickets, and comparison gates.
 - [Native v1 behavior contract](docs/native-contract.md): shared behavior and acceptance scenarios for both implementations.
