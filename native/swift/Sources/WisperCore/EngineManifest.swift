@@ -153,7 +153,7 @@ public struct EngineManifest: Codable, Sendable, Equatable {
               ["arm64", "x86_64"].contains(architecture), (1...64).contains(threads),
               ["cpu", "cpu-accelerate"].contains(acceleration), language == "en", residency == "short-lived",
               decodeArguments == Self.decodingArguments,
-              model.name == "tiny.en-q5_1", model.license == "MIT",
+              ["tiny.en-q5_1", "small.en"].contains(model.name), model.license == "MIT",
               model.licenseURL == "https://github.com/openai/whisper/blob/main/LICENSE",
               Self.validPath(executable.path), Self.validPath(model.path),
               EngineFiles.isDigest(executable.sha256), EngineFiles.isDigest(model.sha256),

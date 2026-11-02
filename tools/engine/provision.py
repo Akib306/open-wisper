@@ -15,9 +15,10 @@ import urllib.request
 ROOT = Path(__file__).resolve().parents[2]
 COMMIT = "a91dd3be72f70dd1b3cb6e252f35fa17b93f596c"
 VERSION = "v1.8.1"
-MODEL = "tiny.en-q5_1"
-# Exact local reference artifact, not an upstream signing/authenticity assertion.
-MODEL_SHA256 = "c77c5766f1cef09b6b7d47f21b546cbddd4157886b3b5d6d4f709e91e66c7c2b"
+MODEL = "small.en"
+MODEL_REVISION = "5359861c739e955e79d9a303bcbc70fb988958b1"
+# Artifact digest, not an upstream signing/authenticity assertion.
+MODEL_SHA256 = "c6138d6d58ecc8322097e0f987c32f1be8bb0a18532a3f88f734d1bbf9c41e5d"
 DECODE = ["--no-prints", "--no-timestamps", "--no-gpu", "--beam-size", "5",
           "--best-of", "5", "--temperature", "0", "--temperature-inc", "0.2", "--flash-attn"]
 FLAGS = {"CMAKE_BUILD_TYPE": "Release", "BUILD_SHARED_LIBS": "OFF", "GGML_CPU": "ON",
@@ -91,7 +92,7 @@ def prepare_build(source):
         fd, temporary = tempfile.mkstemp(prefix=".model-", dir=model.parent)
         try:
             with os.fdopen(fd, "wb") as output, urllib.request.urlopen(
-                    f"https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-{MODEL}.bin", timeout=60) as response:
+                    f"https://huggingface.co/ggerganov/whisper.cpp/resolve/{MODEL_REVISION}/ggml-{MODEL}.bin", timeout=60) as response:
                 shutil.copyfileobj(response, output)
             require(digest(temporary) == MODEL_SHA256, "Downloaded model does not match the reference SHA-256; nothing was installed.")
             os.replace(temporary, model)
@@ -114,7 +115,7 @@ def make_profile(source, executable, model, threads):
     require(all(cache.get(k) == v for k, v in FLAGS.items()), "The engine's build flags differ from the CPU baseline. Use a separately reviewed profile or run --build.")
     require(executable.is_file() and os.access(executable, os.X_OK), "The whisper-cli executable is missing or not executable.")
     require(digest(executable) == digest(source / "build/bin/whisper-cli"), "Runtime executable does not match the recorded source build output.")
-    require(digest(model) == MODEL_SHA256, "The model does not match the tiny.en-q5_1 reference digest.")
+    require(digest(model) == MODEL_SHA256, f"The model does not match the {MODEL} reference digest.")
     architecture = run("/usr/bin/lipo", "-archs", str(executable))
     require(architecture in ("arm64", "x86_64") and architecture == platform.machine(), "Engine must be a thin executable for this Mac's architecture.")
     # Record effective cache declarations as well as hashes of complete build evidence.

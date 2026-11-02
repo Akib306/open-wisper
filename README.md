@@ -2,6 +2,8 @@
 
 An open-source, local-first macOS dictation project. A native Swift menu-bar application and the Electron reference MVP are implemented. An independent Rust application remains planned.
 
+**Experimental:** The native app and its current `small.en` configuration are evaluation builds, not a validated final model choice. In the next iteration we will switch to `base.en` and test recognition quality, transcription latency, and peak memory using the same recordings. No controlled `small.en`-versus-`base.en` results are claimed yet.
+
 ## Start here
 
 - [Native Swift app](native/swift/README.md): build, launch, local engine setup, and usage.

@@ -12,7 +12,7 @@ bash native/swift/scripts/build-app.sh
 open 'native/swift/dist/Open Wisper Swift.app'
 ```
 
-The first command reuses the existing MVP engine/model and verifies their identity. If they are absent, use `python3 tools/engine/provision.py --build` instead. See [engine provisioning](../../tools/engine/README.md) for offline imports and provenance.
+The first command reuses the existing engine/model and verifies their identity. The experimental default model is unquantized **small.en**; existing **tiny.en-q5_1** profiles remain supported. The next iteration will switch to and test **base.en**, not silently change this trial's configuration. If artifacts are absent, use `python3 tools/engine/provision.py --build` instead. To explicitly upgrade an existing tiny profile, preserve its manifest for rollback and use `python3 tools/engine/provision.py --build --refresh` before rebuilding the app. See [engine provisioning](../../tools/engine/README.md) for offline imports and provenance.
 
 The build script embeds a small manifest pointing to those existing artifacts, so there is no repeated model selection or download on this Mac. Keep them at their recorded paths. Set `OPEN_WISPER_PROFILE=/absolute/path/manifest.json` to package another supported profile. A bundle built without a profile prompts for one in Settings.
 

@@ -13,6 +13,31 @@ struct EngineManifestTests {
         #expect(validated.modelURL == fixture.model)
     }
 
+    @Test func smallEnglishProfileSupportsTranscriptionAndIntegrityValidation() async throws {
+        let fixture = try EngineFixture()
+        try fixture.writeManifest {
+            var model = $0["model"] as! [String: Any]
+            model["name"] = "small.en"
+            $0["model"] = model
+        }
+        let validated = try EngineManifest.loadValidated(from: fixture.profile)
+        #expect(validated.manifest.model.name == "small.en")
+        let result = try await fixture.transcribe()
+        #expect(result.text == "fixture transcript")
+        try Data("changed weights".utf8).write(to: fixture.model)
+        #expect(throws: EngineError.integrityMismatch) { try EngineManifest.loadValidated(from: fixture.profile) }
+    }
+
+    @Test func unsupportedModelIsRejected() throws {
+        let fixture = try EngineFixture()
+        try fixture.writeManifest {
+            var model = $0["model"] as! [String: Any]
+            model["name"] = "medium.en"
+            $0["model"] = model
+        }
+        #expect(throws: EngineError.invalidManifest) { try EngineManifest.load(from: fixture.profile) }
+    }
+
     @Test func artifactMismatchAndMissingModel() throws {
         let fixture = try EngineFixture()
         try Data("changed weights".utf8).write(to: fixture.model)

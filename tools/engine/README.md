@@ -1,6 +1,8 @@
 # Shared local speech engine
 
-The Swift baseline uses whisper.cpp **v1.8.1**, commit `a91dd3be72f70dd1b3cb6e252f35fa17b93f596c`, and **tiny.en-q5_1**, English, CPU with Apple Accelerate, four threads, one short-lived process per utterance. The Electron MVP can use the same executable and model. Its decoding options must also match before making performance comparisons.
+The Swift default uses whisper.cpp **v1.8.1**, commit `a91dd3be72f70dd1b3cb6e252f35fa17b93f596c`, and **small.en** (unquantized), English, CPU with Apple Accelerate, four threads, one short-lived process per utterance. Existing **tiny.en-q5_1** profiles remain supported for rollback. The Electron MVP can use the same executable and model. Its decoding options must also match before making performance comparisons.
+
+This model selection is **experimental**. The next iteration will switch to `base.en` and test it against this `small.en` trial using the same recordings, tracking recognition errors, latency, and peak memory. `base.en` is planned, not enabled by this change; no controlled comparative results are claimed yet.
 
 From the repository root:
 
@@ -9,6 +11,8 @@ python3 tools/engine/provision.py
 ```
 
 This verifies the existing `mvp/tools/whisper.cpp` checkout, CMake configuration, runtime binary, and model, then writes `tools/engine/runtime/manifest.json`. It reuses artifacts in place. A second run checks the recorded hashes without downloading, rebuilding, or silently accepting changed files. No accounts or authentication are involved.
+
+To explicitly switch an existing tiny profile to the new default, use `python3 tools/engine/provision.py --build --refresh`. This downloads the pinned `small.en` weights if missing and replaces the selected manifest; keep the previous manifest and tiny weights if you want rollback. A plain verification command deliberately rejects an old-model manifest instead of silently changing it. Rebuild the Swift bundle afterward to embed the new profile.
 
 If the artifacts are absent, install the ordinary Xcode command-line tools and CMake first, then explicitly build and provision:
 
@@ -28,7 +32,7 @@ Imported paths are made absolute and their hashes checked. This imports a declar
 
 ## Manifest v1
 
-All fields are required. The runtime schema currently accepts only the pinned English tiny profile and CPU/CPU-Accelerate configurations:
+All fields are required. The runtime schema currently accepts English `small.en` and `tiny.en-q5_1` profiles with CPU/CPU-Accelerate configurations:
 
 - `schemaVersion`: `1`.
 - `engine`, `sourceVersion`, `sourceCommit`: `whisper.cpp`, `v1.8.1`, and the exact commit above.
@@ -40,7 +44,7 @@ All fields are required. The runtime schema currently accepts only the pinned En
 - `decodeArguments`: exact supported argv in `EngineManifest.decodingArguments`. It sets transcript-only stdout, no timestamps/GPU, beam/best-of 5, temperature 0, increment 0.2, and flash attention. The adapter separately supplies one processor, threads, language, and paths.
 - `provenance`: `kind` (`local-build-metadata` or `operator-attested`), `evidence` (named SHA-256 values), and `limitations`.
 
-The reference model SHA-256 is `c77c5766f1cef09b6b7d47f21b546cbddd4157886b3b5d6d4f709e91e66c7c2b`. It identifies the observed local reference, not an upstream signature. The setup records the actual executable SHA-256; different toolchains may produce different hashes. A clean checkout, matching build output, and CMake evidence do not prove a fully reproducible build.
+The default `small.en` model SHA-256 is `c6138d6d58ecc8322097e0f987c32f1be8bb0a18532a3f88f734d1bbf9c41e5d`; its size is 487,614,201 bytes. Downloads are pinned to model repository revision `5359861c739e955e79d9a303bcbc70fb988958b1`. The previous tiny reference SHA-256 is `c77c5766f1cef09b6b7d47f21b546cbddd4157886b3b5d6d4f709e91e66c7c2b`. These identify artifacts, not upstream signatures. The setup records the actual executable SHA-256; different toolchains may produce different hashes. A clean checkout, matching build output, and CMake evidence do not prove a fully reproducible build.
 
 Artifact files must be ordinary readable files and cannot be group/world-writable. The engine must be executable. Arbitrary symlink traversal is rejected by the runtime; macOS's fixed `/var`, `/tmp`, and `/etc` aliases are supported. Relative paths resolve against the manifest; app packaging converts them to absolute paths.
 
