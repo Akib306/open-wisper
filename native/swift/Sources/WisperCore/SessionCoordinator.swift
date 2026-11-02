@@ -104,6 +104,7 @@ public struct SessionMetrics: Codable, Sendable {
     @Published public private(set) var deliveryResult: DeliveryResult?
     @Published public private(set) var failure: String?
     @Published public private(set) var metrics: SessionMetrics?
+    @Published public private(set) var lastTranscriptionMemory: TranscriptionMemory?
     @Published public private(set) var automaticallyStopped = false
     @Published public private(set) var recordingStartedAt: Date?
     public private(set) var activeSessionID: UUID?
@@ -217,6 +218,7 @@ public struct SessionMetrics: Codable, Sendable {
                                                            timeout: configuration.workerTimeout)
                 guard isCurrent(id) else { return }
                 try Task.checkCancellation()
+                lastTranscriptionMemory = TranscriptionMemory(peakResidentBytes: raw.peakResidentBytes)
                 transition(.transforming)
                 let text = try await transform(raw.text).trimmingCharacters(in: .whitespacesAndNewlines)
                 guard isCurrent(id) else { return }

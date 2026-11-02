@@ -39,6 +39,14 @@ The app never activates another app to deliver text, writes a whole document val
 
 Use **Command-comma** for Settings and **Command-Q** to quit. The Edit menu supports Copy and Select All in selectable text.
 
+### Peak transcription memory
+
+The main window retains **Transcription peak** after the engine exits. This is the engine worker's maximum resident set size (RSS), collected with macOS `wait4` / `ru_maxrss` when reaping the process, including workers too brief to appear in Activity Monitor. It includes model and engine working memory, excludes the GUI and system services, and is not Activity Monitor's physical-footprint metric or a combined app-tree peak. macOS reports this value in bytes; the UI formats it using memory units.
+
+The reading survives dismissing a transcript and starting or cancelling another recording. It is replaced when another engine run returns successfully; unavailable measurements are explicitly labeled. Failed/cancelled engine runs leave the previous reading intact. The value stays in memory only and resets when the app quits. The info button explains its scope.
+
+macOS 26 uses native Liquid Glass for primary controls and the floating indicator. Older systems and Reduce Transparency use opaque native surfaces. Transcript text remains on a solid background.
+
 Local account authentication prompts: **zero**. A fresh packaged app needs microphone access and one Accessibility setup flow for cursor insertion; review-only mode needs no Accessibility access. The Carbon shortcut does not request Input Monitoring. No AppleScript Automation, Screen Recording, cloud account, API key, or subscription is required. The development bundle uses ad-hoc signing: its designated requirement is tied to the executable hash, so rebuilding can require renewed Accessibility approval. A stable bundle ID alone does not guarantee permission continuity; validate it after an update.
 
 ## Development and verification
@@ -65,7 +73,10 @@ UI render checks without microphone access:
 ```sh
 native/swift/.build/debug/OpenWisper --render-preview /tmp/open-wisper.png
 native/swift/.build/debug/OpenWisper --render-preview /tmp/open-wisper-settings.png --preview-settings
+native/swift/.build/debug/OpenWisper --render-preview /tmp/open-wisper-memory.png --preview-memory
 ```
+
+`--preview-memory` supplies an illustrative 128 MB reading for layout checks only. Add `--preview-light` or `--preview-compact` for light appearance or the 460 × 540 pt minimum content size. Offscreen bitmap renders do not capture compositor-rendered Liquid Glass reliably; verify glass controls in the running app.
 
 Tests exercise lifecycle races, cancellation at every stage, stale completions, one-time delivery, permission denial and cancellation before an unanswered request completes, settings/shortcut rollback, WAV framing and native conversion, anti-alias rejection, bounded ring behavior, engine integrity, hostile worker output, timeout/escalation, process-group cleanup, and safe stale-file recovery. See [verification status](../../docs/swift-status.md) for actual results and remaining manual checks.
 

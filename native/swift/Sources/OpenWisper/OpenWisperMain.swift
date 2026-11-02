@@ -58,7 +58,9 @@ import WisperPlatform
                 return
             }
             if let path = value(after: "--render-preview") {
-                try renderPreview(to: URL(fileURLWithPath: path), settings: arguments.contains("--preview-settings"))
+                try renderPreview(to: URL(fileURLWithPath: path), settings: arguments.contains("--preview-settings"),
+                                  memory: arguments.contains("--preview-memory"), light: arguments.contains("--preview-light"),
+                                  compact: arguments.contains("--preview-compact"))
                 return
             }
             guard arguments.isEmpty || (arguments.count == 2 && arguments[0] == "--profile" && profile != nil) else {
@@ -87,15 +89,17 @@ import WisperPlatform
         return try RecordedAudio(wavData: file.read(upToCount: 9_665_537) ?? Data())
     }
 
-    @MainActor private static func renderPreview(to url: URL, settings: Bool) throws {
+    @MainActor private static func renderPreview(to url: URL, settings: Bool, memory: Bool, light: Bool, compact: Bool) throws {
         let app = NSApplication.shared
         app.setActivationPolicy(.prohibited)
+        app.appearance = NSAppearance(named: light ? .aqua : .darkAqua)
         let model = AppModel(preview: true)
         model.settingsOpen = settings
-        let size = NSSize(width: 500, height: settings ? 760 : 560)
+        let size = NSSize(width: compact ? 460 : 500, height: compact ? 540 : settings ? 760 : 590)
         let window = NSWindow(contentRect: NSRect(origin: .zero, size: size),
                               styleMask: [.borderless], backing: .buffered, defer: false)
-        let view = NSHostingView(rootView: MainView(model: model, session: model.coordinator))
+        let view = NSHostingView(rootView: MainView(model: model, session: model.coordinator,
+            previewMemory: memory ? TranscriptionMemory(peakResidentBytes: 128 * 1_024 * 1_024) : nil))
         view.frame = NSRect(origin: .zero, size: size)
         window.contentView = view
         view.layoutSubtreeIfNeeded()

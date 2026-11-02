@@ -5,6 +5,18 @@ import Testing
 
 @Suite("Engine process supervision", .serialized)
 struct ProcessSupervisorTests {
+    @Test func capturesPeakMemoryAfterShortLivedWorkerExits() async throws {
+        let fixture = try EngineFixture(script: "#!/bin/sh\nprintf finished\n")
+        let result = try await fixture.run()
+        #expect(try #require(result.peakResidentBytes) > 0)
+    }
+
+    @Test func capturesMemoryAllocatedByEngineProcess() async throws {
+        let fixture = try EngineFixture(script: "#!/bin/sh\nexec /usr/bin/awk 'BEGIN { for (entry = 0; entry < 400000; entry++) values[entry] = entry; print length(values) }'\n")
+        let result = try await fixture.run()
+        #expect(try #require(result.peakResidentBytes) > 16 * 1_024 * 1_024)
+    }
+
     @Test func literalArgumentsExplicitDirectoryAndEnvironment() async throws {
         let fixture = try EngineFixture(script: "#!/bin/sh\nprintf '%s\\n%s\\n%s' \"$1\" \"$PWD\" \"${HOME-unset}\"\n")
         let argument = "text ; $(touch should-not-exist) ' with spaces"

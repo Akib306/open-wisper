@@ -5,6 +5,7 @@ import Foundation
 struct ProcessOutput: Sendable {
     let stdout: Data
     let elapsed: TimeInterval
+    let peakResidentBytes: UInt64?
 }
 
 /// Uses posix_spawn instead of Foundation.Process so creation of a new process group is
@@ -183,9 +184,10 @@ private final class ProcessRunState: @unchecked Sendable {
         }
 
         var status: Int32 = 0
+        var usage = rusage()
         let reaped: pid_t = lock.withLock {
             // Serialize reap/detachment with onCancel to avoid signalling a recycled PID.
-            let result = waitpid(child, &status, WNOHANG)
+            let result = wait4(child, &status, WNOHANG, &usage)
             pid = 0
             return result
         }
@@ -204,7 +206,9 @@ private final class ProcessRunState: @unchecked Sendable {
         if signal != 0 { throw EngineError.processSignalled(signal) }
         let exitCode = (status >> 8) & 0xff
         guard exitCode == 0 else { throw EngineError.processFailed(exitCode) }
-        return ProcessOutput(stdout: stdout, elapsed: Double(DispatchTime.now().uptimeNanoseconds - started) / 1_000_000_000)
+        return ProcessOutput(stdout: stdout,
+                             elapsed: Double(DispatchTime.now().uptimeNanoseconds - started) / 1_000_000_000,
+                             peakResidentBytes: usage.ru_maxrss > 0 ? UInt64(usage.ru_maxrss) : nil)
     }
 
     private func drain(_ fd: Int32, eof: inout Bool, bytes: inout Int, limit: Int, output: inout Data, retain: Bool) {

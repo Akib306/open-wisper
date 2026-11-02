@@ -44,7 +44,7 @@ actor FakeTranscriber: Transcriber {
     func transcribe(audio: RecordedAudio, profileURL: URL, timeout: TimeInterval) async throws -> TranscriptionResult {
         calls += 1
         await gate?.wait() // Deliberately ignores cancellation to simulate a late worker.
-        return TranscriptionResult(text: text, elapsed: 0.25)
+        return TranscriptionResult(text: text, elapsed: 0.25, peakResidentBytes: 64 * 1_024 * 1_024)
     }
 }
 
@@ -169,11 +169,17 @@ struct SessionCoordinatorTests {
         #expect(phases == [.preparing, .recording, .finalizing, .transcribing, .transforming, .deliveryPending, .completed, .idle])
         #expect(delivery.insertions == 0 && delivery.copies == 0 && delivery.snapshots == 0)
         #expect(coordinator.metrics?.realTimeFactor == 0.125)
+        #expect(coordinator.lastTranscriptionMemory?.peakResidentBytes == 64 * 1_024 * 1_024)
         coordinator.copyResult()
         #expect(delivery.copies == 1)
         #expect(coordinator.deliveryResult?.outcome == .copied)
         coordinator.dismissResult()
         #expect(coordinator.transcript.isEmpty && coordinator.metrics == nil)
+        #expect(coordinator.lastTranscriptionMemory?.peakResidentBytes == 64 * 1_024 * 1_024)
+        coordinator.start(configuration: configuration())
+        try await eventually { coordinator.phase == .recording }
+        await coordinator.cancel()
+        #expect(coordinator.lastTranscriptionMemory?.peakResidentBytes == 64 * 1_024 * 1_024)
     }
 
     @Test(arguments: [SessionPhase.preparing, .recording, .finalizing, .transcribing, .transforming, .deliveryPending])

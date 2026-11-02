@@ -48,7 +48,7 @@ public struct WhisperTranscriber: Sendable {
         // Whisper emits leading segment spacing and a terminal newline; preserve internal text.
         let transcript = text.trimmingCharacters(in: .whitespacesAndNewlines)
         try workspace.cleanup()
-        return TranscriptionResult(text: transcript, elapsed: output.elapsed)
+        return TranscriptionResult(text: transcript, elapsed: output.elapsed, peakResidentBytes: output.peakResidentBytes)
     }
 
     private static func validateAudio(_ audio: RecordedAudio) throws {

@@ -131,7 +131,7 @@ import WisperCore
             window.title = "Open Wisper Swift"
             window.titlebarAppearsTransparent = true
             window.contentView = NSHostingView(rootView: MainView(model: model, session: model.coordinator))
-            window.minSize = NSSize(width: 460, height: 540)
+            window.contentMinSize = NSSize(width: 460, height: 540)
             window.setFrameAutosaveName("OpenWisperReview")
             window.isReleasedWhenClosed = false
             window.delegate = self

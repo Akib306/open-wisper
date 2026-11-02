@@ -77,6 +77,7 @@ struct EngineManifestTests {
         let result = try await fixture.transcribe()
         #expect(result.text == "café 世界")
         #expect(result.elapsed >= 0)
+        #expect(try #require(result.peakResidentBytes) > 0)
         #expect(try fixture.sessionsAreEmpty())
     }
 

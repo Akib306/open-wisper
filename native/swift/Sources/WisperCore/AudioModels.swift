@@ -46,10 +46,12 @@ public struct RecordedAudio: Sendable {
 public struct TranscriptionResult: Sendable {
     public let text: String
     public let elapsed: TimeInterval
+    public let peakResidentBytes: UInt64?
 
-    public init(text: String, elapsed: TimeInterval) {
+    public init(text: String, elapsed: TimeInterval, peakResidentBytes: UInt64? = nil) {
         self.text = text
         self.elapsed = elapsed
+        self.peakResidentBytes = peakResidentBytes
     }
 }
 
