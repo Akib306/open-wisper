@@ -1,5 +1,31 @@
 # macOS updates and permission continuity
 
+## Chosen direction (November 2, 2026)
+
+The user does not want to enroll in or configure an Apple Developer account.
+Keep the current ad-hoc signing workflow for development; certificate enrollment,
+notarization, and keychain/trust changes are not part of the current work.
+Repeated macOS permission approval may therefore remain necessary after rebuilds.
+
+Keep Sparkle as a future option, but revisit it **after implementing the Rust app
+and polishing the UI**, not before or during those tasks. No updater, appcast,
+update-signing key, or release service should be configured now. The research
+below is retained for that later decision; Apple Developer setup is not a
+prerequisite for continuing development or using the current app.
+
+For now, update the installed native app at its existing path, after preserving
+any transcript and quitting it:
+
+```sh
+OPEN_WISPER_APP_DIR='/Applications/Open Wisper Swift.app' \
+bash native/swift/scripts/build-app.sh && \
+open '/Applications/Open Wisper Swift.app'
+```
+
+This uses the existing ad-hoc default, cached models, and staged replacement.
+There are no app-account logins or MFA steps in this workflow. Required macOS
+consent is not bypassed or automatically granted.
+
 ## Finding (November 2, 2026)
 
 The installed native app at `/Applications/Open Wisper Swift.app` currently has
@@ -22,7 +48,7 @@ whether the Electron app, another app copy, or the terminal is asking; do not
 grant extra permissions as a workaround. Review-only dictation does not need
 Accessibility. These findings are specific to the native Swift app.
 
-## Immediate development workflow
+## Optional durable-signing research (not selected)
 
 1. Use one installed bundle path and the same durable code-signing identity for
    every build. An existing Apple Development identity can be used for local
@@ -59,7 +85,7 @@ Only code changes require rebuilding/relaunching. Live patching Swift files
 inside the installed bundle is neither the proposed update mechanism nor a fix
 for a changing code identity.
 
-## Recommended over-the-air design (planned, not implemented)
+## Future over-the-air design (deferred until Rust and UI polish)
 
 Use **Sparkle 2** for conventional signed macOS app updates, rather than a custom
 download-and-execute updater. OTA delivery makes installation easier; stable
@@ -71,8 +97,10 @@ code identity addresses permission continuity. One does not replace the other.
   security advisories rather than copying an old version number from this plan.
 - Keep private update-signing keys in Keychain or a release-secret store, never
   in this repository, the bundle, the feed server, or shell arguments. Sign update
-  archives with Sparkle's Ed25519 tooling as well as signing/notarizing the app
-  with Developer ID. The Ed25519 key is not a replacement for Apple's code identity.
+  archives with Sparkle's Ed25519 tooling and follow the eventual app-signing
+  and distribution policy. Developer ID/notarization is
+  a researched option, not a requirement accepted by the user. The Ed25519 key
+  does not itself establish a stable macOS privacy identity.
 - Version every distributed build with increasing `CFBundleVersion`. Build and
   sign nested executables inside out, then sign the outer bundle. Do not mutate
   bundled model bytes after signing. Validate hashes and the final bundle before
@@ -89,11 +117,12 @@ code identity addresses permission continuity. One does not replace the other.
   may be needed when the destination is not writable; do not promise no system
   prompts in every environment.
 
-Release prerequisites still needed: the owner's signing identity and Apple
-notarization setup, an HTTPS release/appcast destination, an update-signing key,
-an agreed release/version policy, and a validated hardened-runtime configuration
-including microphone entitlements. No feed or keys are invented, and no
-nonfunctional updater is enabled in this change.
+If this work is resumed later, first agree on a distribution/signing strategy
+that respects the no-Apple-Developer-account decision, an HTTPS release/appcast
+destination, an update-signing key, and a release/version policy. Hardened runtime,
+microphone entitlements, and notarization are additional considerations if that
+distribution route is chosen, not setup to perform now. No feed or keys are
+invented, and no nonfunctional updater is enabled in this change.
 
 ## Primary references
 

@@ -1,5 +1,11 @@
 # Swift implementation and verification
 
+## Installed model-picker follow-up — November 2, 2026
+
+After the user's rebuild request, the running app was confirmed idle with no transcript, quit, rebuilt at `/Applications/Open Wisper Swift.app`, and relaunched. All three bundled profiles passed integrity checks during packaging, and recursive strict signature verification passed. The installed GUI's Settings visibly shows **Offline Whisper model → Base English (default)** with `base.en · English · cpu-accelerate`, verified hashes, and the installed relative-profile location. Settings was left open. No microphone recording was initiated. The fresh ad-hoc identity reports Accessibility as needed and microphone permission as requested when recording; permission renewal may still be necessary.
+
+The user explicitly declined Apple Developer account setup. Keep ad-hoc signing for now and revisit Sparkle only after implementing the Rust app and polishing the UI. No account, certificate, notarization, updater, release feed, or privacy-setting changes were configured. See [the chosen update direction](macos-updates.md).
+
 ## Three-model packaging — November 2, 2026
 
 The native app now defaults to `base.en` and bundles it alongside `tiny.en-q5_1` and `small.en`. The idle-only Settings picker persists the selected offline model; legacy external custom profiles remain selected. Packaging downloads only missing model weights at the pinned revision, verifies cached/downloaded hashes, and uses relative bundle profiles. The bootstrap provisioner's existing small-model profile and the installed Electron configuration are unchanged.

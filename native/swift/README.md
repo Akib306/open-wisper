@@ -22,6 +22,8 @@ The local bundle is ad-hoc signed with the stable ID `dev.akib.openwisper.swift`
 
 Packaging assembles and validates a fresh staging bundle before replacing the stopped app, signs the nested worker before recording its packaged hash, and rejects engines with non-system dynamic dependencies. Failed downloads or signing leave the previous installation untouched. For durable signing and the proposed Sparkle OTA workflow, see [macOS updates and permissions](../../docs/macos-updates.md). No automatic updater is enabled yet.
 
+Current development choice: keep ad-hoc signing without Apple Developer account setup. Revisit Sparkle only after the Rust app is implemented and the UI is polished; permission renewal may remain necessary in the meantime.
+
 Only one GUI instance runs per user, including when launching a second bundle copy. Opening another copy returns to the existing app; an active recording keeps its nonactivating indicator. CLI checks and transcription commands can still run independently. Moving the bundle preserves settings and resolves its bundled engine profile at the new location.
 
 ## Use
