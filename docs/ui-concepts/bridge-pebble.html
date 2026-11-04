@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Open Wisper · Swift island and Rust pill</title>
+<style>
+:root{color-scheme:light dark;--background:light-dark(#faf9f6,#191d1c);--foreground:light-dark(#243e3c,#f1ede5);--muted-foreground:light-dark(#59645e,#b9c4bb);--border:light-dark(#d9ddd6,#45524b);--ring:light-dark(#285b59,#a5d2c5);--radius:16px;--font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+*{box-sizing:border-box}html,body{margin:0;background:transparent;color:var(--foreground);font-family:var(--font-sans)}button{font:inherit;cursor:pointer}button:disabled{opacity:.5;cursor:default}button:hover:not(:disabled){filter:brightness(.93)}button:focus-visible,[contenteditable]:focus-visible,.transcript:focus-visible{outline:3px solid var(--ring);outline-offset:3px}::selection{background:#285b59;color:#fff8ee}[hidden]{display:none!important}.gallery{max-width:920px;margin:auto}.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:2px 0 12px}.toolbar button{min-height:36px;border:1px solid var(--border);padding:8px 12px;border-radius:9px;background:transparent;color:var(--foreground);font-size:12px}.toolbar .activate{border:0;background:var(--foreground);color:var(--background)}.toolbar kbd{font:inherit;font-size:11px;opacity:.8;margin-left:9px}.toolbar .reset{margin-left:auto}.scene{--paper:#fff8ee;--petrol:#213f40;--teal:#285b59;--soft:#d9e8df;--sub:#596b65;--copper:#9b4a30;--copper-soft:#f6e3d3;--ring:var(--teal);position:relative;isolation:isolate;overflow:hidden;min-height:570px;background:#ddd4c5;border-radius:16px;color:var(--petrol)}.menubar{height:26px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-size:11px;background:#eee8dc;color:#4f5b51}.menus{display:flex;gap:16px}.menu-app{display:flex;align-items:center;gap:5px;background:transparent;border:0;color:inherit;padding:3px 5px;font-size:11px}.icon{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}.menu-app .icon{width:13px;height:13px}.hardware{position:absolute;z-index:5;top:0;left:calc(50% - 40px);width:80px;height:18px;background:#101b1a;border-radius:0 0 7px 7px;pointer-events:none}.hardware:after{content:"";position:absolute;top:5px;left:37px;width:6px;height:6px;border-radius:50%;background:#2d3c38}.editor{position:absolute;top:125px;left:8%;right:8%;min-height:325px;background:#f4efe5;border-radius:12px;box-shadow:0 10px 28px #393b3020}.editor-head{height:39px;display:flex;align-items:center;gap:7px;padding:0 16px;border-bottom:1px solid #dfddcf}.editor-head i{width:7px;height:7px;border-radius:50%;background:#c5c6b8}.editor-head span{font-size:11px;margin-left:9px;color:#66705f}.editor-body{padding:30px 32px}.editor h2{font:400 27px/1.2 Georgia,serif;letter-spacing:-.025em;margin:0 0 17px;color:#475649}.draft{font-size:14px;line-height:1.8;color:#616b58;min-height:95px;max-width:42ch;caret-color:var(--teal);border-radius:3px}.desktop-note{position:absolute;bottom:19px;left:20px;right:20px;text-align:center;color:#57624f;font-size:11px;line-height:1.6}.bridge{position:absolute;z-index:3;top:0;left:50%;transform:translateX(-50%);width:248px;max-width:calc(100% - 24px);padding:23px 10px 8px;display:flex;gap:5px;align-items:center;background:var(--petrol);color:var(--paper);border-radius:0 0 17px 17px;box-shadow:0 9px 22px #192b292c;--ring:#c3e4d9}.bridge[data-phase=processing]{width:218px}.bridge[data-phase=inserted]{width:234px}.bridge[data-phase=review]{width:248px}.island-open{display:flex;align-items:center;gap:7px;flex:1;min-width:0;min-height:28px;border:0;background:transparent;color:inherit;border-radius:7px;padding:3px 2px;text-align:left;font-size:11px}.island-open .icon{width:15px;height:15px;color:#b5d8cc}.island-label{flex:1;white-space:nowrap}.timer{font-variant-numeric:tabular-nums;color:#c5dcd2;font-size:11px}.island-open .chevron{width:12px;height:12px}.island-action{display:grid;place-items:center;border:0;min-width:28px;min-height:26px;padding:5px;background:var(--copper-soft);color:var(--copper);border-radius:12px}.island-action .icon{width:12px;height:12px}.pebble{position:absolute;z-index:4;top:94px;left:50%;transform:translateX(-50%);width:296px;max-width:calc(100% - 28px);background:var(--paper);color:var(--petrol);border-radius:23px;box-shadow:0 17px 42px #243c3938;overflow:hidden}.titlebar{position:relative;display:flex;align-items:center;justify-content:center;height:42px;padding:0 60px;font-size:11px;color:var(--sub)}.window-controls{position:absolute;left:10px;top:9px;display:flex;gap:1px}.window-controls button{display:grid;place-items:center;width:22px;height:23px;border:0;background:transparent;padding:5px;color:var(--copper)}.window-controls .icon{width:12px;height:12px;background:var(--copper-soft);border-radius:50%;padding:2px;stroke-width:2}.window-controls .minimize{color:var(--teal)}.window-controls .minimize .icon{background:var(--soft)}.window-body{padding:3px 22px 21px}.brand{display:flex;justify-content:center;align-items:center;gap:7px;font-size:15px;font-weight:600;letter-spacing:-.025em;margin-bottom:16px}.brand .icon{width:18px;height:18px;color:var(--teal)}.segments{display:flex;gap:3px;padding:3px;background:#e8ece2;border-radius:20px}.segments button{flex:1;border:0;min-height:29px;padding:5px 8px;border-radius:16px;background:transparent;color:var(--sub);font-size:11px}.segments button[aria-pressed=true]{background:var(--paper);color:var(--petrol);font-weight:600}.panel h1{font-size:25px;font-weight:500;line-height:1.15;letter-spacing:-.03em;margin:23px auto 10px;max-width:210px;text-align:center;text-wrap:balance}.description{font-size:12px;line-height:1.65;text-align:center;color:var(--sub);margin:0 auto;max-width:230px}.record{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;width:68px;height:68px;margin:19px auto 10px;border:0;border-radius:50%;background:var(--teal);color:var(--paper);font-size:11px;font-weight:600}.record .icon{width:22px;height:22px}.record.stop{background:var(--copper-soft);color:var(--copper)}.record-label{text-align:center;font-size:11px;color:var(--sub);margin:0;line-height:1.5}.panel-foot{display:flex;justify-content:center;align-items:center;gap:5px;margin-top:19px;font-size:11px;color:var(--sub)}.panel-foot .icon{width:12px;height:12px}.review h1,.settings h1{font-size:21px;max-width:none;margin-top:22px}.transcript{font-size:15px;line-height:1.7;max-height:146px;overflow:auto;scrollbar-color:var(--teal) var(--soft);scrollbar-width:thin;padding:5px 0;margin:12px 0;text-align:left}.small-note{font-size:11px;line-height:1.5;color:var(--sub);margin:12px 0;text-align:center}.actions{display:flex;gap:8px;margin-top:17px}.actions button{min-height:35px;flex:1;border:0;border-radius:18px;background:#e8ece2;color:var(--petrol);font-size:12px}.actions .primary{background:var(--teal);color:var(--paper)}.setting{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #d9dfd5;font-size:12px;line-height:1.4}.setting small{display:block;font-size:11px;color:var(--sub);margin-top:3px}.setting strong{font-weight:500;white-space:nowrap}.settings .small-note{text-align:left}.annotation{display:flex;align-items:baseline;justify-content:space-between;gap:15px;margin:16px 0 10px}.annotation h2{font-size:18px;font-weight:550;letter-spacing:-.025em;margin:0}.annotation p{font-size:12px;line-height:1.55;color:var(--muted-foreground);text-align:right;margin:0}.feedback,.disclaimer{font-size:11px;line-height:1.65;color:var(--muted-foreground);margin:0}.feedback{min-height:37px}.disclaimer{padding-top:12px;border-top:1px solid var(--border)}@media(max-width:480px){.toolbar{gap:6px}.toolbar button{padding:7px 9px;font-size:11px}.toolbar kbd{margin-left:5px}.toolbar .reset{margin-left:0}.scene{min-height:590px}.menus span{display:none}.menubar{padding:0 11px}.editor{left:17px;right:17px;top:130px}.editor-body{padding:27px 22px}.editor h2{font-size:25px}.draft{font-size:13px}.annotation{display:block}.annotation p{text-align:left;margin-top:5px}.pebble{top:92px}}
+.variant-picker{display:flex;gap:7px;flex-wrap:wrap;margin:2px 0 12px}.variant-picker button{min-height:36px;padding:7px 12px;border:1px solid var(--border);border-radius:9px;background:transparent;color:var(--foreground);font-size:12px}.variant-picker button[aria-pressed=true]{background:var(--foreground);color:var(--background);border-color:transparent}.scene[data-variant=rust] .hardware{display:none}.scene[data-variant=rust] .bridge{top:38px;padding:8px 10px;border-radius:999px}
+</style>
+</head>
+<body>
+<main class="gallery" id="demo">
+<nav class="variant-picker" aria-label="Approved application design variants"><button data-variant-pick="swift" aria-pressed="true">Swift · Dynamic Island</button><button data-variant-pick="rust" aria-pressed="false">Rust · Floating pill</button></nav>
+<div class="toolbar" role="group" aria-label="Simulate the dictation workflow"><button class="activate" data-action="activate" id="activate">Activate demo <kbd>Command + Shift + Space</kbd></button><button data-action="finish" id="finish" disabled>Finish sample</button><button class="reset" data-action="reset">Reset</button></div>
+<div class="scene" id="scene" data-variant="swift" aria-label="Illustrative desktop with independent indicator and app window">
+<div class="menubar"><div class="menus" aria-hidden="true"><strong>Draft</strong><span>File</span><span>Edit</span></div><button class="menu-app" data-action="open" aria-label="Open Open Wisper window">Wisper</button></div>
+<div class="editor"><div class="editor-head" aria-hidden="true"><i></i><i></i><i></i><span>Work note</span></div><div class="editor-body"><h2>A little less friction.</h2><div class="draft" contenteditable="true" role="textbox" aria-label="Sample editor; demo never inserts text" aria-multiline="true" spellcheck="false">The next version should feel calm, direct, and effortless.</div></div></div>
+<div class="hardware" role="img" aria-label="Illustrative camera keep-out"></div>
+<div class="bridge" id="bridge" hidden></div>
+<section class="pebble" id="pebble-window" role="region" aria-labelledby="window-title" hidden><div class="titlebar"><div class="window-controls"><button data-action="close" aria-label="Close Pebble window"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button><button class="minimize" data-action="close" aria-label="Minimize Pebble window"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button></div><span id="window-title">Open Wisper</span></div><div class="window-body" id="window-body"></div></section>
+<div class="desktop-note">An indicator while you speak. A window when you choose.<br>Illustrative desktop · No microphone or insertion access</div>
+</div>
+<div class="annotation"><h2 id="variant-title">Swift · Bridge + Pebble</h2><p id="variant-description">Top-edge island while recording.<br>Click it to open the separate Pebble window.</p></div>
+<p class="feedback" id="feedback" role="status" aria-live="polite">Nothing open yet. Activate the demo, then click the recording indicator. The shortcut works only while this demo is focused.</p>
+<p class="disclaimer">UI study only. Audio, timer, transcript, and settings are illustrative. No recording, clipboard access, insertion, or history is saved. Native global shortcuts, camera safe areas, and nonactivating HUD behavior remain unimplemented. Swift and Rust are unchanged.</p>
+</main>
+<script>
+const demo=document.getElementById('demo');
+const scene=document.getElementById('scene');
+const bridge=document.getElementById('bridge');
+const pebble=document.getElementById('pebble-window');
+const body=document.getElementById('window-body');
+const feedback=document.getElementById('feedback');
+const activateButton=document.getElementById('activate');
+const finishButton=document.getElementById('finish');
+const icons={mic:'<rect x="8" y="3" width="8" height="12" rx="4"/><path d="M5 11v1a7 7 0 0 0 14 0v-1M12 19v3m-4 0h8"/>',chevron:'<path d="m9 6 6 6-6 6"/>',check:'<path d="m5 12 4 4 10-10"/>',stop:'<rect x="6" y="6" width="12" height="12" rx="2"/>',close:'<path d="m6 6 12 12M18 6 6 18"/>',lock:'<rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>'};
+const icon=(name,extra='')=>'<svg class="icon '+extra+'" viewBox="0 0 24 24" aria-hidden="true">'+icons[name]+'</svg>';
+let phase='idle';
+let windowOpen=false;
+let activeTab='ready';
+let hasResult=false;
+let needsReview=false;
+let completionTimer;
+const sample='Let’s keep the first version simple. A quiet tool that turns a thought into words, right where you’re already writing.';
+function windowContents(){
+const tabs='<div class="brand">'+icon('mic')+'Open Wisper</div><nav class="segments" aria-label="Pebble views">'+['ready','review','settings'].map(tab=>'<button data-tab="'+tab+'" aria-pressed="'+(tab===activeTab)+'" '+(tab==='review'&&!hasResult?'disabled':'')+'>'+tab[0].toUpperCase()+tab.slice(1)+'</button>').join('')+'</nav>';
+if(activeTab==='settings')return tabs+'<section class="panel settings"><h1>Make it yours.</h1><div class="setting"><span>Activation shortcut<small>Toggle dictation</small></span><strong>Cmd Shift Space</strong></div><div class="setting"><span>Processing<small>Audio stays on this Mac</small></span><strong>Local</strong></div><div class="setting"><span>Transcript history<small>Nothing saved by default</small></span><strong>Off</strong></div><p class="small-note">Sample configuration, not live settings.</p></section>';
+if(activeTab==='review'&&hasResult)return tabs+'<section class="panel review"><h1>Your words, ready.</h1><p class="transcript" tabindex="0">'+sample+'</p><p class="small-note">Sample transcript · Explicit copy only</p><div class="actions"><button data-action="close">Close</button><button class="primary" data-action="copy">Copy text</button></div></section>';
+const copy={idle:['A little space to speak.','Say it naturally. Put your words where you’re already writing.','Start','start','mic'],recording:['A thought in motion.','Recording continues while this window is open.','Stop','stop','stop'],processing:['Finding your words.','Transcription appearance only. Choose Finish sample above to continue.','Working','wait','mic'],inserted:['Right where it belongs.','Inserted appearance only. No text has been delivered.','Again','start','check'],review:['Your words are ready.','You stopped with Wisper open. Review and copy instead of inserting into another app.','Review','review','check']}[phase];
+return tabs+'<section class="panel"><h1>'+copy[0]+'</h1><p class="description">'+copy[1]+'</p><button class="record '+(phase==='recording'?'stop':'')+'" data-action="'+copy[3]+'" '+(phase==='processing'?'disabled':'')+'>'+icon(copy[4])+'<span>'+copy[2]+'</span></button><p class="record-label">'+(phase==='recording'?'Stop & review while this window is open':'Current-session demo · No audio is captured')+'</p><div class="panel-foot">'+icon('lock')+'On-device · No history</div></section>';
+}
+function draw(){
+const focused=document.activeElement;
+const focusKey=body.contains(focused)?['data-tab','data-action'].map(name=>[name,focused.getAttribute(name)]).find(entry=>entry[1]):null;
+bridge.hidden=phase==='idle';bridge.dataset.phase=phase;
+if(!bridge.hidden){const labels={recording:'Recording',processing:'Transcribing',inserted:'Inserted at cursor',review:'Ready to review'};bridge.innerHTML='<button class="island-open" data-action="open" aria-label="'+labels[phase]+'. Open Pebble window" aria-controls="pebble-window" aria-expanded="'+windowOpen+'">'+icon(phase==='inserted'?'check':'mic')+'<span class="island-label">'+labels[phase]+'</span>'+(phase==='recording'?'<span class="timer">0:12</span>':'')+icon('chevron','chevron')+'</button><button class="island-action" data-action="'+(phase==='recording'?'stop':phase==='processing'?'cancel':'dismiss')+'" aria-label="'+(phase==='recording'?'Stop demo recording':phase==='processing'?'Cancel demo processing':'Dismiss island')+'">'+icon(phase==='recording'?'stop':'close')+'</button>';}
+pebble.hidden=!windowOpen;
+if(windowOpen){body.innerHTML=windowContents();if(focusKey){const replacement=Array.from(body.querySelectorAll('button')).find(button=>button.getAttribute(focusKey[0])===focusKey[1]&&!button.disabled);(replacement||pebble.querySelector('[data-action="close"]')).focus({preventScroll:true});}}
+activateButton.textContent=phase==='recording'?'Stop demo':'Activate demo';
+activateButton.disabled=phase==='processing';finishButton.disabled=phase!=='processing';
+if(phase!=='recording')activateButton.insertAdjacentHTML('beforeend',' <kbd>Command + Shift + Space</kbd>');
+}
+function reveal(element,kind){
+element.getAnimations().forEach(animation=>animation.cancel());
+const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const frames=reduced?[{opacity:.5},{opacity:1}]:[{opacity:0,transform:'translate(-50%,'+(kind==='window'?'7px':'-4px')+')'+(kind==='window'?' scale(.98)':'')},{opacity:1,transform:'translate(-50%,0) scale(1)'}];
+element.animate(frames,{duration:reduced?90:kind==='window'?200:160,easing:'cubic-bezier(.16,1,.3,1)'});
+}
+function activate(){
+if(phase==='processing')return;
+clearTimeout(completionTimer);
+if(phase==='recording'){stop();return;}
+phase='recording';hasResult=false;needsReview=false;if(activeTab==='review')activeTab='ready';draw();reveal(bridge,'island');
+feedback.textContent='Recording appearance only. Click the indicator to open Pebble; activation does not open it.';
+}
+function stop(){
+if(phase!=='recording')return;
+phase='processing';needsReview=windowOpen;draw();
+feedback.textContent='Processing appearance only. Choose Finish sample. Pebble will not open automatically.';
+}
+function openWindow(){
+const wasOpen=windowOpen;windowOpen=true;if(phase==='review')activeTab='review';draw();if(!wasOpen)reveal(pebble,'window');
+pebble.querySelector('[data-action="close"]').focus({preventScroll:true});
+feedback.textContent='Pebble opened by your click as a separate window. The indicator stays compact; closing this window does not stop recording.';
+}
+function closeWindow(){
+windowOpen=false;draw();(bridge.hidden?document.querySelector('.draft'):bridge.querySelector('.island-open')).focus({preventScroll:true});
+feedback.textContent='Pebble closed. '+(phase==='recording'?'Recording appearance continues in the indicator.':'The dictation state is unchanged.');
+}
+function finish(){
+if(phase!=='processing')return;
+hasResult=true;needsReview=needsReview||windowOpen;phase=needsReview?'review':'inserted';draw();
+feedback.textContent=needsReview?'Review is available because Wisper was open. No automatic insertion or window opening.':'Inserted appearance only. No text was inserted. The indicator dismisses shortly; Pebble stays closed.';
+if(!needsReview)completionTimer=setTimeout(()=>{if(phase==='inserted'){phase='idle';draw();}},1600);
+}
+demo.addEventListener('click',event=>{
+const button=event.target.closest('button');if(!button||button.disabled)return;
+if(button.dataset.variantPick){const variant=button.dataset.variantPick;scene.dataset.variant=variant;demo.querySelectorAll('[data-variant-pick]').forEach(pick=>pick.setAttribute('aria-pressed',String(pick===button)));document.getElementById('variant-title').textContent=variant==='swift'?'Swift · Bridge + Pebble':'Rust · Pill + Pebble';document.getElementById('variant-description').innerHTML=variant==='swift'?'Top-edge island while recording.<br>Click it to open the separate Pebble window.':'Detached, fully rounded pill while recording.<br>No Dynamic Island or notch integration.';draw();feedback.textContent=(variant==='swift'?'Swift uses the top-edge island.':'Rust uses a normal floating pill.')+' Both open Pebble only when you click. This switch changes the mockup, not a native app.';return;}
+if(button.dataset.tab){activeTab=button.dataset.tab;draw();return;}
+const action=button.dataset.action;
+if(action==='activate'||action==='start')activate();
+else if(action==='stop')stop();
+else if(action==='open')openWindow();
+else if(action==='close')closeWindow();
+else if(action==='finish')finish();
+else if(action==='review'){activeTab='review';draw();}
+else if(action==='copy')feedback.textContent='Copy appearance only. Your clipboard is unchanged.';
+else if(action==='reset'){clearTimeout(completionTimer);phase='idle';windowOpen=false;activeTab='ready';hasResult=false;needsReview=false;draw();feedback.textContent='Reset. Nothing open. Activate the demo to show the indicator.';}
+else if(action==='cancel'||action==='dismiss'){clearTimeout(completionTimer);phase='idle';draw();feedback.textContent='Indicator dismissed. Pebble opens or closes only when you choose.';}
+});
+document.addEventListener('keydown',event=>{
+if(event.metaKey&&event.shiftKey&&event.code==='Space'){event.preventDefault();if(!event.repeat)activate();}
+else if(event.key==='Escape'&&windowOpen){event.preventDefault();closeWindow();}
+});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&phase==='inserted'){clearTimeout(completionTimer);phase='idle';draw();}});
+draw();
+</script>
+</body>
+</html>

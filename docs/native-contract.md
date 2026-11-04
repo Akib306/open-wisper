@@ -11,6 +11,10 @@ Status: **v1 target contract**. The [Swift baseline](../native/swift/README.md) 
 - Cursor insertion is the default workflow, following the user's October 31 correction. One explicit Accessibility setup enables delivery; explicit review/Copy remains available. Completion never activates the app automatically.
 - Start with the same English model as the Electron baseline. Multilingual support is a separate tested profile.
 
+## Visual direction
+
+Visual direction is separately accepted in [ADR-0001](decisions/0001-native-ui-variants.md): Swift uses a compact Dynamic Island–inspired Bridge indicator; Rust uses an ordinary floating pill. Both open an independent Pebble window only on explicit user action. This visual choice does not change the behavioral ports, capture ownership, focus rules, or delivery guarantees below, and native UI integration remains pending.
+
 ## Ports
 
 Both implementations provide equivalents of these interfaces, with independent implementation code:
