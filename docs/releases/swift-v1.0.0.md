@@ -1,6 +1,20 @@
 # Open Wisper Swift 1.0.0
 
-Status: **release candidate prepared for local use; final live acceptance is pending**. Version 1 closes the Swift feature baseline before work on the independent Rust app. It does not claim every acceptance scenario has passed or publish a release. The bundle identifies itself as **1.0.0, build 2**, with bundle ID `dev.akib.openwisper.swift`.
+Status: **downloadable release candidate; final live acceptance is pending**. [GitHub prerelease `swift-v1.0.0-rc.1`](https://github.com/Akib306/open-wisper/releases/tag/swift-v1.0.0-rc.1) distributes the ready-to-run Apple Silicon app. Version 1 closes the Swift feature baseline before work on the independent Rust app. The bundle identifies itself as **1.0.0, build 2**, with bundle ID `dev.akib.openwisper.swift`; this prerelease does not claim every acceptance scenario has passed.
+
+## Download and install
+
+[Download the app ZIP](https://github.com/Akib306/open-wisper/releases/download/swift-v1.0.0-rc.1/Open-Wisper-Swift-1.0.0-rc.1-macos-arm64.zip), extract it, drag **Open Wisper Swift.app** into **Applications**, and open it there. The download includes the worker and all three models. End users need no compiler, package manager, provisioning command, or separate model download. See the [installation and first-launch instructions](../../README.md#download-for-macos) for the ad-hoc-signing prompt and macOS permissions.
+
+| Artifact | Identity |
+| --- | --- |
+| Release tag / source | `swift-v1.0.0-rc.1` / `3482c4d` |
+| Platform | Apple Silicon (`arm64`), macOS 14+ declared; validated on the recorded newer Apple Silicon host. No Intel asset. |
+| App archive | `Open-Wisper-Swift-1.0.0-rc.1-macos-arm64.zip` — 610,183,437 bytes |
+| Archive SHA-256 | `c2cee2b2e94da91ffdee9cb1a009a02e8cb8421e2125ca9379e2939d5b486fea` |
+| Checksum asset | `SHA256SUMS.txt` |
+
+The archive was created with macOS `ditto --keepParent` from the already validated bundle, without rebuilding or re-signing. A fresh extraction retained executable permissions, the recorded executable hash, version/build, notices, all three relocated profile checks, and strict recursive signature verification. The ZIP and checksum are GitHub release assets, not files in git. GitHub's automatically generated source archives are for developers.
 
 ## What version 1 includes
 
@@ -31,7 +45,7 @@ Confirmed fixes:
 
 No other confirmed defect was found in the reviewed scope. Artifact verification is a point-in-time integrity check; subsequent path-based access does not protect against concurrent replacement or establish upstream authenticity. No audit establishes that a program is bug-free. The manual checks and known limitations below remain part of this release record.
 
-## Build and verify
+## Build and verify (maintainers)
 
 From the repository root, with Xcode/Swift and the previously provisioned engine available:
 
@@ -46,6 +60,16 @@ codesign --verify --deep --strict 'native/swift/dist/Open Wisper Swift.app'
 The build script validates all three packaged model profiles and the final signature before replacing its output. It stages at `native/swift/dist`; it does not install over `/Applications` or launch the app. Missing cached models require a one-time public HTTPS download during packaging. Installed dictation needs no network or model download. Source engine/model provenance and hashes are documented in the [engine guide](../../tools/engine/README.md).
 
 Automated results and artifact identity from this pass are recorded in the current entry in [Swift verification status](../swift-status.md). A sandbox compiler-cache failure is an environment failure, not a passing or failing app test; use a test environment with the compiler caches and AppKit/pasteboard services available. Do not disable assertions or relax deadlines to obtain a pass.
+
+To package a verified bundle for a GitHub release, preserve the app bundle with macOS `ditto`. These commands are for maintainers, not installation steps:
+
+```sh
+cd native/swift/dist
+ditto -c -k --sequesterRsrc --keepParent 'Open Wisper Swift.app' Open-Wisper-Swift-1.0.0-rc.1-macos-arm64.zip
+shasum -a 256 Open-Wisper-Swift-1.0.0-rc.1-macos-arm64.zip > SHA256SUMS.txt
+```
+
+Before publishing, freshly extract the archive, verify its signature and all three profiles, and compare executable identity with the tested build. Upload the ZIP and checksum as release assets; verify GitHub's uploaded size/digest and the anonymous download. Use a new version/tag for changed bytes rather than replacing an existing release asset.
 
 ## Final live acceptance
 
@@ -74,6 +98,6 @@ For an eventual installation, preserve any wanted transcript, quit the existing 
 
 ## Release boundary and Rust
 
-Hold/Fn-only shortcuts, device selection, VAD/streaming/resident inference, multilingual profiles, history, snippets/rewrite, launch-at-login, OTA updates, notarized public distribution, and controlled language/engine benchmarks remain outside Swift v1. Selecting a project distribution license, checking current upstream engine advisories, and completing the declared live matrix are separate prerequisites before describing this as a broadly distributed, fully accepted release.
+Hold/Fn-only shortcuts, device selection, VAD/streaming/resident inference, multilingual profiles, history, snippets/rewrite, launch-at-login, OTA updates, notarized public distribution, and controlled language/engine benchmarks remain outside Swift v1. The preview is downloadable while the declared live matrix remains pending; it is not a fully accepted stable release. The upstream whisper.cpp public security-advisory API returned no published entries on November 14, 2026; this is a check of that inventory, not a complete vulnerability assessment. A project-wide source distribution license remains unselected; the bundled third-party notices are included.
 
-Once the candidate's code and documents are accepted, commit the reviewed changes and use an immutable Swift-specific tag such as `swift-v1.0.0` for the release artifact; retain its binary hash and engine profiles. No tag or public release is created by this document. Continue with the [Rust handoff](../rust-handoff.md), carrying the behavior contract and its unresolved gates forward.
+The downloadable candidate uses `swift-v1.0.0-rc.1`, targeting the reviewed source at `3482c4d`. Reserve `swift-v1.0.0` for stable acceptance; do not move the candidate tag or replace its asset bytes silently. Future versions receive a new tag and artifact/checksum. Continue with the [Rust handoff](../rust-handoff.md), carrying the behavior contract and unresolved checks forward.

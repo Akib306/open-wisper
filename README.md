@@ -1,31 +1,37 @@
 # Open Wisper
 
-An open-source, local-first macOS dictation project. The native Swift menu-bar app is preparing its 1.0.0 release baseline; the Electron MVP remains a reference. The next track is an independent Rust application.
+Offline dictation for macOS. Record with a keyboard shortcut and insert the transcript into the text field where you stopped recording. Audio is transcribed locally; no account or service key is required.
 
-**Experimental:** The native app bundles three offline Whisper models: `tiny.en-q5_1`, `base.en` (default), and `small.en`. Choose a model in Settings while dictation is idle. These remain evaluation builds; no controlled accuracy, latency, or memory comparison is claimed yet.
+## Download for macOS
 
-## Start here
+**[Download Open Wisper Swift — Apple Silicon](https://github.com/Akib306/open-wisper/releases/download/swift-v1.0.0-rc.1/Open-Wisper-Swift-1.0.0-rc.1-macos-arm64.zip)**
 
-- [Native Swift app](native/swift/README.md): build, launch, local engine setup, and usage.
-- [Swift 1.0.0 release record](docs/releases/swift-v1.0.0.md): reviewed scope, fixes, release procedure, and remaining live acceptance checks.
-- [Swift changelog](native/swift/CHANGELOG.md) and [Rust handoff](docs/rust-handoff.md): the final Swift feature baseline and next implementation slices.
+Requires an Apple Silicon Mac (M-series) with macOS 14 or later. This is the **1.0.0 release candidate, build 2**. The ZIP is approximately 610 MB and contains the app, speech engine, and all three English models. You do not need Xcode, Swift, Python, Homebrew, or separate model downloads.
+
+1. Download the app ZIP above and double-click it to extract **Open Wisper Swift.app**.
+2. Drag **Open Wisper Swift.app** into **Applications**, then open it there. Its controls live in the menu bar.
+3. Allow microphone access when you first record. To insert into other apps, choose **Enable cursor insertion…** and enable Open Wisper Swift in **System Settings → Privacy & Security → Accessibility**.
+4. Place your cursor in a text field. Press **Command–Shift–Space** to start recording and again to stop. If the destination cannot be used safely, Review/Copy keeps the transcript available.
+
+This preview is ad-hoc signed and is **not notarized by Apple**. If macOS blocks the first launch and you choose to trust this build, open **System Settings → Privacy & Security → Open Anyway**, then confirm Open. See [Apple's guidance](https://support.apple.com/en-us/102445). No Terminal commands or system-wide security changes are needed.
+
+[Release notes and checksum](https://github.com/Akib306/open-wisper/releases/tag/swift-v1.0.0-rc.1) · [App guide](native/swift/README.md#use) · [Changelog](native/swift/CHANGELOG.md)
+
+In the release's Assets list, choose **Open-Wisper-Swift-1.0.0-rc.1-macos-arm64.zip**. GitHub's **Source code (zip)** and **Source code (tar.gz)** downloads contain source code rather than the app. This build is for Apple Silicon; an Intel download is not available.
+
+The default model is `base.en`; Settings also offers `tiny.en-q5_1` and `small.en`. Model comparisons and the pending live acceptance checks are recorded in the [release record](docs/releases/swift-v1.0.0.md). Rust is the next independent application; the Electron MVP remains a reference.
+
+## For developers
+
+Building from source is optional. See the [Swift developer guide](native/swift/README.md#build-from-source-developers) for toolchain requirements, engine provisioning, packaging, and tests.
+
+- [Swift 1.0.0 release record](docs/releases/swift-v1.0.0.md): reviewed scope, fixes, downloadable artifact, and remaining live acceptance checks.
 - [Swift verification status](docs/swift-status.md): completed checks and remaining release gates.
-- [macOS updates and permissions](docs/macos-updates.md): stable signing and the proposed OTA update workflow.
-- [Installed Wispr Flow investigation](docs/research/wispr-flow.md): artifact-backed findings, provenance, and remaining unknowns.
-- [Rust and Swift implementation plan](docs/native-plan.md): architecture decisions, implementation tickets, and comparison gates.
+- [Rust handoff](docs/rust-handoff.md) and [native implementation plan](docs/native-plan.md): next implementation slices, architecture, and comparison gates.
 - [Native v1 behavior contract](docs/native-contract.md): shared behavior and acceptance scenarios for both implementations.
-- [Accepted UI decision](docs/decisions/0002-bottom-pill.md): Swift's bottom pill and separate Pebble window, also selected for planned Rust. Native verification results and remaining hardware/focus checks are recorded separately.
-- [Existing Electron MVP](mvp/README.md): setup and current functionality.
-- [Historical MVP measurements](mvp/BENCHMARK.md): preliminary smoke measurements, not controlled native comparisons.
+- [UI decision](docs/decisions/0002-bottom-pill.md): bottom recording pill and separate Pebble window.
+- [macOS updates and permissions](docs/macos-updates.md): signing decisions and the deferred OTA update workflow.
+- [Installed Wispr Flow investigation](docs/research/wispr-flow.md): artifact-backed findings and remaining unknowns.
+- [Electron MVP](mvp/README.md) and [historical measurements](mvp/BENCHMARK.md): reference implementation and preliminary smoke measurements.
 
-The native tracks share behavior specifications and an exact, hash-recorded speech-engine profile. The Swift app does not require a Rust or Electron application core. No Wispr source, branding, service credentials, or private protocols are used in the implementation.
-
-To build the Swift app using the engine already installed for the MVP:
-
-```sh
-python3 tools/engine/provision.py
-bash native/swift/scripts/build-app.sh
-open 'native/swift/dist/Open Wisper Swift.app'
-```
-
-The installed apps are **Open Wisper Swift** and **Open Wisper Electron** in `/Applications`. Each variant allows one running instance per user; opening another copy returns to its existing instance. Their settings and bundle IDs remain separate.
+The native tracks share behavior specifications and an exact, hash-recorded speech-engine profile. The Swift app has no Electron or Rust dependency. No Wispr source, branding, service credentials, or private protocols are used.

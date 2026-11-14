@@ -1,5 +1,11 @@
 # macOS updates and permission continuity
 
+## Downloaded app updates (November 14, 2026)
+
+End users install and update the Swift app from [GitHub Releases](https://github.com/Akib306/open-wisper/releases/tag/swift-v1.0.0-rc.1). Download the app ZIP, quit the existing app after preserving any wanted transcript, extract the ZIP, and drag **Open Wisper Swift.app** into **Applications**. Retain the previous stopped bundle if rollback is needed. This uses the already packaged executable, engine, and models; users do not build or provision anything. The [installation guide](../README.md#download-for-macos) covers first launch and macOS consent.
+
+GitHub downloads are the manual distribution channel. Sparkle, appcasts, Apple Developer enrollment, notarization, and keychain/trust changes remain deferred. Ad-hoc code changes can require renewed macOS consent, so install one final downloaded copy rather than repeating build/permission cycles. There is no app-account login or MFA.
+
 ## Chosen direction (November 2, 2026)
 
 The user does not want to enroll in or configure an Apple Developer account.
@@ -13,8 +19,8 @@ update-signing key, or release service should be configured now. The research
 below is retained for that later decision; Apple Developer setup is not a
 prerequisite for continuing development or using the current app.
 
-For now, update the installed native app at its existing path, after preserving
-any transcript and quitting it:
+For developer source builds only, update the installed native app at its existing
+path after preserving any transcript and quitting it:
 
 ```sh
 OPEN_WISPER_APP_DIR='/Applications/Open Wisper Swift.app' \

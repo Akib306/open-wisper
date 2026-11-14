@@ -1,34 +1,16 @@
 # Open Wisper Swift for macOS
 
-A compact native menu-bar app implemented in Swift 6, AppKit, and SwiftUI. It records with AVAudioEngine, converts audio off the realtime callback, invokes a pinned local whisper.cpp worker, and inserts into the text field focused when recording stops. The Swift application has no Electron or Rust dependency. A small C11 atomic ring provides the realtime buffer handoff.
+Offline English dictation in a native macOS menu-bar app. Start and stop recording with a keyboard shortcut; transcription runs locally and follows the text field and selection captured at Stop. Review and Copy are available when insertion needs your attention.
 
 **Version 1.0.0, build 2 — release candidate.** See the [release record](../../docs/releases/swift-v1.0.0.md) for the final Swift scope, code-review findings, verification and pending live checks, the [changelog](CHANGELOG.md) for user-facing changes, and the [Rust handoff](../../docs/rust-handoff.md) for the next track.
 
-## Build and launch
+## Download and install
 
-Requires macOS 14 or later, an Apple Swift 6 toolchain (validated here with Swift 6.2 on Apple Silicon), and Python 3 for provisioning/packaging. Building the engine from scratch also requires CMake. Run from the repository root:
+**[Download the ready-to-run app for Apple Silicon](https://github.com/Akib306/open-wisper/releases/download/swift-v1.0.0-rc.1/Open-Wisper-Swift-1.0.0-rc.1-macos-arm64.zip)** (macOS 14+, approximately 610 MB). Unzip it, drag **Open Wisper Swift.app** to **Applications**, and open it there. The speech engine and all three models are included; no development tools or provisioning commands are required.
 
-```sh
-python3 tools/engine/provision.py
-bash native/swift/scripts/build-app.sh
-open 'native/swift/dist/Open Wisper Swift.app'
-```
+This is an ad-hoc-signed, unnotarized preview. If macOS blocks the first launch and you trust the downloaded build, use **System Settings → Privacy & Security → Open Anyway**, then confirm Open. [Apple's instructions](https://support.apple.com/en-us/102445) explain the prompt. Grant microphone access on first recording and Accessibility for cursor insertion as described below. An Intel build is not available.
 
-The first command reuses and verifies the existing engine profile. If artifacts are absent, use `python3 tools/engine/provision.py --build` instead. See [engine provisioning](../../tools/engine/README.md) for offline imports and provenance.
-
-The build script downloads and verifies tiny.en-q5_1, base.en, and small.en at a pinned upstream revision, caching them under `tools/engine/runtime/models` (override with `OPEN_WISPER_MODEL_CACHE`). It bundles all three models and the verified engine with relative manifests: approximately 668 MB of model data. Packaging requires network access on a cache miss; the installed app needs no network, login, or model download. The Settings picker defaults to base.en and persists the choice. Existing custom profiles remain supported. Set `OPEN_WISPER_PROFILE=/absolute/path/manifest.json` to provide the engine profile used for packaging. Missing or hash-mismatched assets fail verification rather than silently selecting another model.
-
-The build script refuses to replace a running app, because rebuilding does not update its loaded code or in-memory settings. Quit the app after keeping any transcript you need before rebuilding its bundle. The default development output is `native/swift/dist/Open Wisper Swift.app`. To update the installed app, quit it and run `OPEN_WISPER_APP_DIR="/Applications/Open Wisper Swift.app" bash native/swift/scripts/build-app.sh`, then open that installed bundle.
-
-The local bundle is ad-hoc signed with the stable ID `dev.akib.openwisper.swift`. It is not notarized. To use an existing signing identity, set `SIGNING_IDENTITY` when building. Rebuilding an ad-hoc-signed app may require renewed macOS permission setup; keep one packaged copy at a stable location while testing.
-
-Packaging assembles and validates a fresh staging bundle before replacing the stopped app, signs the nested worker before recording its packaged hash, and rejects engines with non-system dynamic dependencies. Failed downloads or signing leave the previous installation untouched. For durable signing and the proposed Sparkle OTA workflow, see [macOS updates and permissions](../../docs/macos-updates.md). No automatic updater is enabled yet.
-
-The bundle includes engine/model licenses at `Contents/Resources/THIRD-PARTY-NOTICES.txt`, copied from [the source notice file](Resources/THIRD-PARTY-NOTICES.txt) before signing. These third-party notices do not select a license for the project's own source code.
-
-Current development choice: keep ad-hoc signing without Apple Developer account setup. Revisit Sparkle only after the Rust app is implemented and the UI is polished; permission renewal may remain necessary in the meantime.
-
-Only one GUI instance runs per user, including when launching a second bundle copy. Opening another copy returns to the existing app; an active recording keeps its nonactivating indicator. CLI checks and transcription commands can still run independently. Moving the bundle preserves settings and resolves its bundled engine profile at the new location.
+Choose the app ZIP under [release assets](https://github.com/Akib306/open-wisper/releases/tag/swift-v1.0.0-rc.1), rather than GitHub's source-code archives. Updates use the same download-and-drag process after quitting the previous app. Keep a copy of the previous bundle if you need to roll back; macOS may require renewed consent for changed ad-hoc code.
 
 ## Use
 
@@ -56,6 +38,32 @@ The reading survives dismissing a transcript and starting or cancelling another 
 The current design calls for a solid petrol pill and solid Pebble surfaces, including the transcript, in both appearances.
 
 Account login/MFA prompts: **zero**. macOS may request Touch ID or a password when changing Accessibility settings; this is not automatically repeated. A fresh packaged app needs microphone access and one Accessibility setup flow for cursor insertion; review-only mode needs no Accessibility access. The Carbon shortcut does not request Input Monitoring. No AppleScript Automation, Screen Recording, cloud account, API key, or subscription is required. The development bundle uses ad-hoc signing: its designated requirement is tied to the executable hash, so rebuilding can require renewed Accessibility approval. A stable bundle ID alone does not guarantee permission continuity; validate it after an update.
+
+## Build from source (developers)
+
+The app is implemented in Swift 6, AppKit, and SwiftUI, with AVAudioEngine capture and a C11 atomic ring for realtime buffer handoff. Source builds require macOS 14 or later, an Apple Swift 6 toolchain (validated here with Swift 6.2 on Apple Silicon), and Python 3 for provisioning/packaging. Building the engine from scratch also requires CMake. Run from the repository root:
+
+```sh
+python3 tools/engine/provision.py
+bash native/swift/scripts/build-app.sh
+open 'native/swift/dist/Open Wisper Swift.app'
+```
+
+The first command reuses and verifies the existing engine profile. If artifacts are absent, use `python3 tools/engine/provision.py --build` instead. See [engine provisioning](../../tools/engine/README.md) for offline imports and provenance.
+
+The build script downloads and verifies tiny.en-q5_1, base.en, and small.en at a pinned upstream revision, caching them under `tools/engine/runtime/models` (override with `OPEN_WISPER_MODEL_CACHE`). It bundles all three models and the verified engine with relative manifests: approximately 668 MB of model data. Packaging requires network access on a cache miss; the installed app needs no network, login, or model download. The Settings picker defaults to base.en and persists the choice. Existing custom profiles remain supported. Set `OPEN_WISPER_PROFILE=/absolute/path/manifest.json` to provide the engine profile used for packaging. Missing or hash-mismatched assets fail verification rather than silently selecting another model.
+
+The build script refuses to replace a running app, because rebuilding does not update its loaded code or in-memory settings. Quit the app after keeping any transcript you need before rebuilding its bundle. The default development output is `native/swift/dist/Open Wisper Swift.app`. To update the installed app, quit it and run `OPEN_WISPER_APP_DIR="/Applications/Open Wisper Swift.app" bash native/swift/scripts/build-app.sh`, then open that installed bundle.
+
+The local bundle is ad-hoc signed with the stable ID `dev.akib.openwisper.swift`. It is not notarized. To use an existing signing identity, set `SIGNING_IDENTITY` when building. Rebuilding an ad-hoc-signed app may require renewed macOS permission setup; keep one packaged copy at a stable location while testing.
+
+Packaging assembles and validates a fresh staging bundle before replacing the stopped app, signs the nested worker before recording its packaged hash, and rejects engines with non-system dynamic dependencies. Failed downloads or signing leave the previous installation untouched. For durable signing and the proposed Sparkle OTA workflow, see [macOS updates and permissions](../../docs/macos-updates.md). No automatic updater is enabled yet.
+
+The bundle includes engine/model licenses at `Contents/Resources/THIRD-PARTY-NOTICES.txt`, copied from [the source notice file](Resources/THIRD-PARTY-NOTICES.txt) before signing. These third-party notices do not select a license for the project's own source code.
+
+Current development choice: keep ad-hoc signing without Apple Developer account setup. Revisit Sparkle only after the Rust app is implemented and the UI is polished; permission renewal may remain necessary in the meantime.
+
+Only one GUI instance runs per user, including when launching a second bundle copy. Opening another copy returns to the existing app; an active recording keeps its nonactivating indicator. CLI checks and transcription commands can still run independently. Moving the bundle preserves settings and resolves its bundled engine profile at the new location.
 
 ## Development and verification
 

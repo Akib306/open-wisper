@@ -2,10 +2,11 @@
 
 ## 1.0.0 — release candidate, November 14, 2026
 
-The final Swift feature baseline before independent Rust development. See the [release record](../../docs/releases/swift-v1.0.0.md) for verification and pending live acceptance. This is a prepared candidate, not a published/tagged release.
+The final Swift feature baseline before independent Rust development. See the [release record](../../docs/releases/swift-v1.0.0.md) for verification and pending live acceptance. The ready-to-run Apple Silicon app is available as [GitHub prerelease `swift-v1.0.0-rc.1`](https://github.com/Akib306/open-wisper/releases/tag/swift-v1.0.0-rc.1); stable acceptance remains pending.
 
 ### Added
 
+- A ready-to-run macOS app ZIP and checksum in GitHub Releases, with download-and-drag installation and all engine/model assets included.
 - Offline English menu-bar dictation with a configurable toggle shortcut, explicit microphone capture, and a five-minute maximum recording limit.
 - Bundled `tiny.en-q5_1`, `base.en` (default), and `small.en` Whisper models, plus custom-profile selection while idle.
 - A solid bottom recording pill and separate Pebble window for Settings and memory-only transcript review.
