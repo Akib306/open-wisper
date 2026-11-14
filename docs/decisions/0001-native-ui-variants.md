@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted by the user on November 3, 2026. This is an approved design target, not a claim of native implementation or verification. The Rust application remains planned.
+Accepted by the user on November 3, 2026. The visual shape and placement decision is superseded by [ADR-0002](0002-bottom-pill.md) on November 14, 2026. The separate Pebble window and shared workflow remain relevant except where the newer decision clarifies them. The rest of this record is historical, not current implementation guidance.
 
 ## Context
 

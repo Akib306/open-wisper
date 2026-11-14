@@ -13,7 +13,7 @@ Status: **v1 target contract**. The [Swift baseline](../native/swift/README.md) 
 
 ## Visual direction
 
-Visual direction is separately accepted in [ADR-0001](decisions/0001-native-ui-variants.md): Swift uses a compact Dynamic Island–inspired Bridge indicator; Rust uses an ordinary floating pill. Both open an independent Pebble window only on explicit user action. This visual choice does not change the behavioral ports, capture ownership, focus rules, or delivery guarantees below, and native UI integration remains pending.
+[ADR-0002](decisions/0002-bottom-pill.md) specifies a solid petrol bottom pill for Swift and planned Rust, centered and bounded in the usable work area at `visibleFrame.minY + 28` pt. No notch integration. Both use an independent 360 × 480 pt Pebble window (minimum 340 × 420 pt), opened only explicitly. Coordinator state drives all indicator status; first-click Stop/Cancel does not activate the app. Status opens Pebble, Review selects transcript review, and setup opens Settings. Brief success/cancel feedback and persistent fallback review do not change the delivery and focus rules below. Swift source implements this direction; remaining native conformance checks are recorded in [Swift status](swift-status.md).
 
 ## Ports
 
@@ -83,7 +83,7 @@ On an insertion attempt, atomically consume a session-scoped delivery authorizat
 - History is opt-in, with retention duration and deletion/export controls. Never add screenshot, URL, field-text, or clipboard-history capture by default.
 - Content-free diagnostic events only. Explicit Copy/clipboard fallback discloses clipboard exposure to other applications.
 - Permissions are feature-scoped: one microphone authorization flow on a fresh installation; one Accessibility setup flow when enabling insertion. Input Monitoring may add one flow if a chosen hotkey strategy needs it; avoid that strategy in v1 where possible.
-- Expected local-account authentication count: **zero login/MFA prompts**. Permission flows are not authentication. OS revocation/re-signing can force renewed setup; do not loop requests on each launch.
+- Expected local-account authentication count: **zero login/MFA prompts**. macOS may request Touch ID or a password when Accessibility settings change; this is not an account login and is not necessarily repeated. OS revocation/re-signing can force renewed setup; do not loop requests on each launch.
 - Two independently signed apps have separate identities and grants. Expect the setup sequence once per app, not a transferable permission grant. Validate actual OS dialogs/settings steps on packaged builds before promising an exact prompt count.
 - No AppleScript Automation dependency in the proposed baseline. No Screen Recording, system-audio, camera, Bluetooth, cloud login, or screen-context permission request for basic dictation.
 

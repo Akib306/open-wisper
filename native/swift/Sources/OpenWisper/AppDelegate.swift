@@ -1,10 +1,19 @@
 import AppKit
+import Combine
 import SwiftUI
 import WisperCore
 
 @MainActor final class NonactivatingPanel: NSPanel {
     override var canBecomeKey: Bool { false }
     override var canBecomeMain: Bool { false }
+
+    override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
+        frameRect
+    }
+}
+
+@MainActor final class IndicatorHostingView<Content: View>: NSHostingView<Content> {
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 }
 
 @MainActor final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
@@ -16,14 +25,33 @@ import WisperCore
     private var toggleItem: NSMenuItem?
     private var cancelItem: NSMenuItem?
     private var window: NSWindow?
+    private let navigationState = WindowNavigation()
     private var indicator: NonactivatingPanel?
+    private var indicatorDismissal: Task<Void, Never>?
+    private var displayObserver: NSObjectProtocol?
+    private(set) var indicatorFeedback: IndicatorFeedback = .hidden
+    private var resultObservation: AnyCancellable?
     private var workspaceObservers: [NSObjectProtocol] = []
     private var shuttingDown = false
     private var shutdownComplete = false
 
-    init(profileURL: URL?) {
-        model = AppModel(profileURL: profileURL)
+    convenience init(profileURL: URL?) {
+        self.init(model: AppModel(profileURL: profileURL))
+    }
+
+    init(model: AppModel) {
+        self.model = model
         super.init()
+        model.onPhase = { [weak self] phase in self?.phaseChanged(phase) }
+        // Copy and Dismiss change the result without changing session phase.
+        // Reconcile after @Published has committed the result, including actions
+        // performed in the separate review window.
+        resultObservation = model.coordinator.$deliveryResult.dropFirst().sink { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self, !self.shuttingDown else { return }
+                self.phaseChanged(self.model.coordinator.phase)
+            }
+        }
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -49,8 +77,13 @@ import WisperCore
                         object: id, userInfo: ["report": String(decoding: data, as: UTF8.self)], deliverImmediately: true)
                 }
             }
-        model.onPhase = { [weak self] phase in self?.phaseChanged(phase) }
-        model.onNeedsWindow = { [weak self] in self?.showWindow() }
+        model.onNeedsSetup = { [weak self] in
+            guard let self else { return }
+            self.indicatorDismissal?.cancel()
+            self.indicatorDismissal = nil
+            self.indicatorFeedback = .review
+            self.showIndicator()
+        }
         let center = NSWorkspace.shared.notificationCenter
         workspaceObservers.append(center.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in
@@ -64,7 +97,14 @@ import WisperCore
                 self?.model.coordinator.prepareDeliveryForFrontmostApp()
             }
         })
-        showWindow()
+        displayObserver = NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification,
+            object: nil, queue: .main) { [weak self] _ in
+                Task { @MainActor in
+                    guard let self, self.indicator?.isVisible == true else { return }
+                    self.showIndicator()
+                }
+            }
+        if model.coordinator.phase != .idle { phaseChanged(model.coordinator.phase) }
     }
 
     private func installMenu() {
@@ -126,26 +166,33 @@ import WisperCore
 
     @objc func showWindow() {
         if window == nil {
-            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 500, height: 590),
+            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 360, height: 480),
                                   styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
             window.title = "Open Wisper Swift"
             window.titlebarAppearsTransparent = true
-            window.contentView = NSHostingView(rootView: MainView(model: model, session: model.coordinator))
-            window.contentMinSize = NSSize(width: 460, height: 540)
-            window.setFrameAutosaveName("OpenWisperReview")
+            window.backgroundColor = NSColor(name: nil) { appearance in
+                appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+                    ? NSColor(srgbRed: 0.08, green: 0.15, blue: 0.15, alpha: 1)
+                    : NSColor(srgbRed: 1, green: 0.973, blue: 0.933, alpha: 1)
+            }
+            window.contentView = NSHostingView(rootView: MainView(model: model, session: model.coordinator, navigationState: navigationState))
+            window.contentMinSize = NSSize(width: 340, height: 420)
+            window.setFrameAutosaveName("OpenWisperPebbleCompact")
             window.isReleasedWhenClosed = false
             window.delegate = self
             window.center()
             self.window = window
         }
         model.refreshPermissions()
+        window?.deminiaturize(nil)
         window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
 
     func windowWillClose(_ notification: Notification) {
-        // Closing review discards in-memory text, while active capture continues.
+        // Closing review discards in-memory text; active capture continues.
         model.coordinator.dismissResult()
+        navigationState.reviewSelected = false
     }
 
     private func phaseChanged(_ phase: SessionPhase) {
@@ -156,8 +203,25 @@ import WisperCore
         statusItem?.button?.image = NSImage(systemSymbolName: phase == .recording ? "mic.fill" : "waveform",
                                            accessibilityDescription: phase.title)
         statusItem?.button?.toolTip = "Open Wisper Swift — \(phase.title)"
-        if phase.isActive || model.coordinator.needsReview {
+        let feedback = IndicatorFeedback(phase: phase, needsReview: model.coordinator.needsReview,
+            outcome: model.coordinator.deliveryResult?.outcome)
+        if feedback == indicatorFeedback && indicatorDismissal != nil { return }
+        indicatorDismissal?.cancel()
+        indicatorDismissal = nil
+        indicatorFeedback = feedback
+        if feedback != .hidden {
             showIndicator()
+            if feedback == .inserted || feedback == .insertionRequested || feedback == .cancelled {
+                indicatorDismissal = Task { [weak self] in
+                    do { try await Task.sleep(for: .seconds(1.8)) }
+                    catch { return }
+                    guard let self, self.indicatorFeedback == feedback,
+                          !self.model.coordinator.phase.isActive else { return }
+                    self.indicator?.orderOut(nil)
+                    self.indicatorDismissal = nil
+                    self.indicatorFeedback = .hidden
+                }
+            }
         } else {
             indicator?.orderOut(nil)
         }
@@ -166,39 +230,47 @@ import WisperCore
     }
 
     private func showIndicator() {
+        let screen = indicator?.isVisible == true ? indicator?.screen :
+            NSScreen.screens.first { $0.frame.contains(NSEvent.mouseLocation) } ?? NSScreen.main
+        guard let screen = screen ?? NSScreen.main else { return }
+        let layout = IndicatorLayout(screen: screen.frame, visibleFrame: screen.visibleFrame,
+            phase: model.coordinator.phase, feedback: indicatorFeedback)
         if indicator == nil {
-            let panel = NonactivatingPanel(contentRect: NSRect(x: 0, y: 0, width: 340, height: 64),
+            let panel = NonactivatingPanel(contentRect: layout.frame,
                                            styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
-            panel.level = .floating
+            panel.level = .statusBar
             panel.hidesOnDeactivate = false
             panel.isFloatingPanel = true
             panel.becomesKeyOnlyIfNeeded = true
             panel.isOpaque = false
             panel.backgroundColor = .clear
+            panel.title = "Open Wisper · Dictation"
             panel.hasShadow = true
             panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
-            panel.contentView = NSHostingView(rootView: RecordingIndicatorView(session: model.coordinator,
-                stop: { [weak model] in model?.coordinator.stop() }, cancel: { [weak model] in model?.cancel() },
-                review: { [weak self] in
-                    self?.indicator?.orderOut(nil)
-                    self?.model.settingsOpen = false
-                    self?.showWindow()
-                }, copy: { [weak self] in
-                    self?.model.coordinator.copyResult()
-                    self?.indicator?.orderOut(nil)
-                }, dismiss: { [weak self] in
-                    self?.model.coordinator.dismissResult()
-                    self?.indicator?.orderOut(nil)
-                }))
+            panel.animationBehavior = .none
             indicator = panel
         }
-        if indicator?.isVisible != true {
-            let screen = NSScreen.screens.first { $0.frame.contains(NSEvent.mouseLocation) } ?? NSScreen.main
-            if let frame = screen?.visibleFrame {
-                indicator?.setFrameOrigin(NSPoint(x: frame.midX - 170, y: frame.minY + 28))
-            }
-            indicator?.orderFrontRegardless()
-        }
+        indicator?.setFrame(layout.frame, display: true)
+        indicator?.contentView = IndicatorHostingView(rootView: RecordingIndicatorView(session: model.coordinator,
+                layout: layout, feedback: indicatorFeedback, setupRequired: !model.engineReady,
+                stop: { [weak model] in model?.coordinator.stop() }, cancel: { [weak model] in model?.cancel() },
+                review: { [weak self] in
+                    guard let self else { return }
+                    self.model.settingsOpen = !self.model.engineReady && !self.model.coordinator.needsReview
+                    self.navigationState.reviewSelected = self.model.coordinator.needsReview
+                    self.showWindow()
+                }, copy: { [weak self] in
+                    self?.model.coordinator.copyResult()
+                }, dismiss: { [weak self] in
+                    guard let self else { return }
+                    self.model.coordinator.dismissResult()
+                    self.navigationState.reviewSelected = false
+                    self.indicatorDismissal?.cancel()
+                    self.indicatorDismissal = nil
+                    self.indicatorFeedback = .hidden
+                    self.indicator?.orderOut(nil)
+                }))
+        indicator?.orderFrontRegardless()
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
@@ -214,6 +286,8 @@ import WisperCore
         Task { @MainActor in
             await model.shutdown()
             indicator?.orderOut(nil)
+            indicatorDismissal?.cancel()
+            if let displayObserver { NotificationCenter.default.removeObserver(displayObserver) }
             for observer in workspaceObservers { NSWorkspace.shared.notificationCenter.removeObserver(observer) }
             workspaceObservers.removeAll()
             if let reopenObserver { DistributedNotificationCenter.default().removeObserver(reopenObserver) }

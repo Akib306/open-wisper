@@ -22,18 +22,20 @@ extension WhisperTranscriber: Transcriber {}
     @Published var checkingEngine = false
     @Published var permissionRefresh = 0
     var onPhase: ((SessionPhase) -> Void)?
-    var onNeedsWindow: (() -> Void)?
+    var onNeedsSetup: (() -> Void)?
     private var settingsWritable = true
     private var verification: Task<Void, Never>?
     private var hashVerification: Task<String, Error>?
     private var settingsGeneration = UUID()
+    private let preview: Bool
 
-    init(profileURL: URL? = nil, preview: Bool = false) {
+    init(profileURL: URL? = nil, preview: Bool = false, previewSession: SessionCoordinator? = nil) {
+        self.preview = preview
         let store = SettingsStore()
         self.store = store
         var initial = AppSettings()
         var loadError: String?
-        do { initial = try store.load() }
+        do { if !preview { initial = try store.load() } }
         catch { loadError = "Settings could not be loaded. Your file has been preserved. \(error.localizedDescription)" }
         if let profileURL { initial.engineProfilePath = profileURL.path; initial.whisperModel = .custom }
         else { initial.resolveModelProfile(resources: Bundle.main.resourceURL) }
@@ -44,14 +46,18 @@ extension WhisperTranscriber: Transcriber {}
         self.permissions = permissions
         let capture = AVAudioCapture()
         self.capture = capture
-        self.coordinator = SessionCoordinator(capture: capture, transcriber: WhisperTranscriber(),
+        self.coordinator = previewSession ?? SessionCoordinator(capture: capture, transcriber: WhisperTranscriber(),
                                               permissions: permissions, delivery: AccessibilityDelivery())
         capture.onDurationLimit = { [weak coordinator] id in coordinator?.recordingLimitReached(sessionID: id) }
         coordinator.onTransition = { [weak self] phase in
             self?.objectWillChange.send()
             self?.onPhase?(phase)
         }
-        if !preview {
+        if preview {
+            settings.automaticInsertion = false
+            engineReady = true
+            engineDescription = "UI preview · No microphone, engine, clipboard, or insertion."
+        } else {
             do {
                 let hotkeys = try GlobalHotkey()
                 self.hotkeys = hotkeys
@@ -74,7 +80,7 @@ extension WhisperTranscriber: Transcriber {}
         guard engineReady else {
             notice = "Choose and verify an engine profile in Settings before recording."
             settingsOpen = true
-            onNeedsWindow?()
+            onNeedsSetup?()
             return
         }
         notice = nil
@@ -87,6 +93,7 @@ extension WhisperTranscriber: Transcriber {}
     func cancel() { coordinator.requestCancel() }
 
     func save(_ proposed: AppSettings) {
+        if preview { settings = proposed; return }
         guard !coordinator.phase.isActive else { notice = "Finish dictation before changing settings."; return }
         guard settingsWritable else { notice = "The existing settings file could not be read. Reveal it and move it aside before restarting; it has not been overwritten."; return }
         do {

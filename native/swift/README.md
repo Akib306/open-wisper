@@ -29,7 +29,7 @@ Only one GUI instance runs per user, including when launching a second bundle co
 ## Use
 
 1. Choose **Enable cursor insertion…** in Open Wisper and enable this app in **System Settings → Privacy & Security → Accessibility**. This is needed once for inserting into other apps; macOS may require renewed access after re-signing. The app cannot grant itself access.
-2. Place the cursor in a text field. Press **Command–Shift–Space** to start recording, then press again to stop. A floating, nonactivating indicator stays visible. The shortcut can be changed in Settings; an occupied combination leaves the previous registration intact. Allow microphone access on the first recording.
+2. Place the cursor in a text field. Press **Command–Shift–Space** to start recording, then press again to stop. A nonactivating pill stays visible at the bottom of the display, above the Dock. The shortcut can be changed in Settings; an occupied combination leaves the previous registration intact. Allow microphone access on the first recording.
 3. After local transcription, words are sent to the field and selection captured at Stop. The app does not pop up or take focus. Web editors use one targeted Paste, even if they report writable `AXSelectedText`; native fields use direct selected-text replacement where supported, otherwise Paste. It checks process identity, element, selection, editability, and security before writing. Keep the destination unchanged while transcription finishes.
 4. If insertion cannot proceed, the quiet indicator offers **Review** and **Copy**. Only choosing Review opens the app. You can turn off **Insert at cursor when dictation stops** in Settings. Closing/dismissing review or starting another session clears the in-memory transcript. Closing the window during recording leaves the visible indicator and menu controls running.
 
@@ -49,9 +49,9 @@ The main window retains **Transcription peak** after the engine exits. This is t
 
 The reading survives dismissing a transcript and starting or cancelling another recording. It is replaced when another engine run returns successfully; unavailable measurements are explicitly labeled. Failed/cancelled engine runs leave the previous reading intact. The value stays in memory only and resets when the app quits. The info button explains its scope.
 
-macOS 26 uses native Liquid Glass for primary controls and the floating indicator. Older systems and Reduce Transparency use opaque native surfaces. Transcript text remains on a solid background.
+The current design calls for a solid petrol pill and solid Pebble surfaces, including the transcript, in both appearances.
 
-Local account authentication prompts: **zero**. A fresh packaged app needs microphone access and one Accessibility setup flow for cursor insertion; review-only mode needs no Accessibility access. The Carbon shortcut does not request Input Monitoring. No AppleScript Automation, Screen Recording, cloud account, API key, or subscription is required. The development bundle uses ad-hoc signing: its designated requirement is tied to the executable hash, so rebuilding can require renewed Accessibility approval. A stable bundle ID alone does not guarantee permission continuity; validate it after an update.
+Account login/MFA prompts: **zero**. macOS may request Touch ID or a password when changing Accessibility settings; this is not automatically repeated. A fresh packaged app needs microphone access and one Accessibility setup flow for cursor insertion; review-only mode needs no Accessibility access. The Carbon shortcut does not request Input Monitoring. No AppleScript Automation, Screen Recording, cloud account, API key, or subscription is required. The development bundle uses ad-hoc signing: its designated requirement is tied to the executable hash, so rebuilding can require renewed Accessibility approval. A stable bundle ID alone does not guarantee permission continuity; validate it after an update.
 
 ## Development and verification
 
@@ -68,6 +68,8 @@ Check cursor-insertion readiness without recording, posting events, reading docu
 '/Applications/Open Wisper Swift.app/Contents/MacOS/OpenWisper' --check-delivery
 ```
 
+Copy fallback can mean Accessibility is unavailable, or that a safe destination could not be established or revalidated despite permission. Check the running app's report and its reason before changing settings. An ad-hoc rebuild can change code identity and require a renewed grant; repeated toggle/restart loops have previously failed and are not a diagnosis. The November 14 running-app check found insertion enabled and Accessibility allowed, with no eligible focused field at that moment. The reported intermittent failure remains unconfirmed; readiness does not prove successful live insertion.
+
 The report includes `automaticInsertion`, `accessibilityGranted`, `eligibleFocusedField`, a failure `reason`, and content-free role/ancestry metadata. When the GUI is running, `source` is `running Swift app`: the command queries that process without activating it or changing the session’s saved target. If the GUI does not reply within two seconds, the report explicitly identifies the standalone CLI, whose permissions macOS may attribute to the launching terminal. A false Accessibility result from the running app requires enabling **Open Wisper Swift.app** in System Settings → Privacy & Security → Accessibility. A false eligible-field result can simply mean Settings or another noneditable surface is focused. This command never prompts, records, reads document text, or pastes.
 
 The CLI accepts mono 16 kHz signed 16-bit PCM RIFF WAV, including extra metadata chunks, up to five minutes. It prints only the requested transcript; errors contain no worker stdout/stderr. CLI paths never request microphone or Accessibility permission. Use the packaged app for live capture, so macOS grants permissions to the application identity.
@@ -78,9 +80,22 @@ UI render checks without microphone access:
 native/swift/.build/debug/OpenWisper --render-preview /tmp/open-wisper.png
 native/swift/.build/debug/OpenWisper --render-preview /tmp/open-wisper-settings.png --preview-settings
 native/swift/.build/debug/OpenWisper --render-preview /tmp/open-wisper-memory.png --preview-memory
+native/swift/.build/debug/OpenWisper --render-indicator /tmp/open-wisper-pill.png --preview-state recording
+native/swift/.build/debug/OpenWisper --render-indicator /tmp/open-wisper-processing.png --preview-state processing
+native/swift/.build/debug/OpenWisper --preview-ui --preview-state recording
 ```
 
-`--preview-memory` supplies an illustrative 128 MB reading for layout checks only. Add `--preview-light` or `--preview-compact` for light appearance or the 460 × 540 pt minimum content size. Offscreen bitmap renders do not capture compositor-rendered Liquid Glass reliably; verify glass controls in the running app.
+`--preview-memory` supplies an illustrative 128 MB reading for layout checks only. Add `--preview-light` or `--preview-compact` for light appearance or the 340 × 420 pt minimum content size. Pebble defaults to 360 × 480 pt; settings scroll rather than removing controls. Engine memory details are disclosed on demand. Offscreen bitmap renders check layout, not live focus or display safe areas.
+
+`--preview-state` accepts `idle`, `recording`, `processing`, `review`, `failure`, or `cancelled`. `--render-indicator` previews the bottom pill. `--preview-ui` exercises the real AppKit indicator/window lifecycle with fake capture, permissions, transcription, and delivery: no audio capture, inference, clipboard writes, insertion, global-hotkey registration, or settings-file writes. Stop finishes a sample transcript after two seconds; Cancel discards it. Preview settings start from defaults, not personal settings. Do not use its OS permission setup controls for validation; permission and actual insertion checks belong to the packaged production app.
+
+### Bottom pill and Pebble
+
+Swift implements a single solid petrol Capsule for all visible states, centered and bounded in the usable area at `visibleFrame.minY + 28` pt, above the Dock, without notch integration. Idle launch leaves both surfaces hidden. Placement follows the display selected at activation and responds to display configuration changes. The legacy `--preview-detached` flag is accepted as a no-op. Source changes alone do not replace the installed app.
+
+Click the indicator's status to open the independent Pebble window; Review selects transcript review and setup opens Settings. Stop/Cancel accept the first click without activating the app. Closing or minimizing Pebble does not stop capture. Successful insertion briefly confirms on the indicator (an unverified Paste is labeled “Insertion requested,” not “Inserted”); recovery remains available through explicit Review/Copy. No completion opens a closed window. Both appearances use solid, high-legibility surfaces without simulated audio or spatial animation. Building source alone does not replace the installed application or renew its ad-hoc Accessibility approval; the latest installation and permission checkpoint is recorded in [Swift verification status](../../docs/swift-status.md).
+
+Copy and Dismiss update the pill even when used in Pebble. Successful Copy hides the recovery pill; failed Copy leaves recovery available. Closing an idle review window clears its in-memory transcript. Starting another recording cancels any old completion-dismissal timer.
 
 Tests exercise lifecycle races, cancellation at every stage, stale completions, one-time delivery, permission denial and cancellation before an unanswered request completes, settings/shortcut rollback, WAV framing and native conversion, anti-alias rejection, bounded ring behavior, engine integrity, hostile worker output, timeout/escalation, process-group cleanup, and safe stale-file recovery. See [verification status](../../docs/swift-status.md) for actual results and remaining manual checks.
 

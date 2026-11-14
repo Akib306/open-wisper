@@ -16,7 +16,7 @@ The user selected a compact native menu-bar utility on October 30, 2026 and clar
 
 ## Evidence on hand
 
-The user approved the visual direction on November 3, 2026: a Dynamic Island–inspired Bridge recording indicator for Swift only, a normal floating pill indicator for the planned Rust app, and a separate Pebble main window opened by explicit click in both. Activation shows the indicator without opening the app; completion must not open the app automatically. [ADR-0001](docs/decisions/0001-native-ui-variants.md) and [DESIGN.md](DESIGN.md) record the target. The HTML reference is a UI study, not implemented or verified native behavior.
+On November 14, 2026 the user chose a normal bottom-of-screen petrol pill for both Swift and planned Rust, with a separate Pebble Settings/Review window opened explicitly. Swift source implements the pill and its shared session state; activation and completion do not automatically open the window. [ADR-0002](docs/decisions/0002-bottom-pill.md) and [DESIGN.md](DESIGN.md) record the target. [Swift verification status](docs/swift-status.md) records tests and remaining live checks; earlier HTML studies are historical.
 
 `docs/research/wispr-flow.md` is a bounded static investigation, not proof of runtime parity. `docs/native-plan.md` sets the architecture. The Electron source is an implementation reference; no original proprietary source or assets belong in the native application.
 

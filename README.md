@@ -12,7 +12,7 @@ An open-source, local-first macOS dictation project. A native Swift menu-bar app
 - [Installed Wispr Flow investigation](docs/research/wispr-flow.md): artifact-backed findings, provenance, and remaining unknowns.
 - [Rust and Swift implementation plan](docs/native-plan.md): architecture decisions, implementation tickets, and comparison gates.
 - [Native v1 behavior contract](docs/native-contract.md): shared behavior and acceptance scenarios for both implementations.
-- [Accepted UI decision](docs/decisions/0001-native-ui-variants.md): Swift's Dynamic Island–inspired indicator, Rust's normal pill, and their separate Pebble window ([interactive reference](docs/ui-concepts/bridge-pebble.html)). Native integration is not implemented yet.
+- [Accepted UI decision](docs/decisions/0002-bottom-pill.md): Swift's bottom pill and separate Pebble window, also selected for planned Rust. Native verification results and remaining hardware/focus checks are recorded separately.
 - [Existing Electron MVP](mvp/README.md): setup and current functionality.
 - [Historical MVP measurements](mvp/BENCHMARK.md): preliminary smoke measurements, not controlled native comparisons.
 

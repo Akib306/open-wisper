@@ -15,6 +15,7 @@ let package = Package(
         .target(name: "WisperPlatform", dependencies: ["WisperCore", "CWisperAudio"]),
         .executableTarget(name: "OpenWisper", dependencies: ["WisperCore", "WisperPlatform"]),
         .testTarget(name: "WisperCoreTests", dependencies: ["WisperCore"]),
-        .testTarget(name: "WisperPlatformTests", dependencies: ["WisperPlatform", "CWisperAudio"])
+        .testTarget(name: "WisperPlatformTests", dependencies: ["WisperPlatform", "CWisperAudio"]),
+        .testTarget(name: "OpenWisperTests", dependencies: ["OpenWisper"])
     ]
 )

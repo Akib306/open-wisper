@@ -22,7 +22,10 @@ import WisperPlatform
                   OpenWisper --check-profile --profile /path/manifest.json
                   OpenWisper --transcribe-wav /path/audio.wav --profile /path/manifest.json
                   OpenWisper --render-preview /path/preview.png [--preview-settings]
+                  OpenWisper --render-indicator /path/indicator.png [--preview-state recording|processing|review|failure|cancelled]
+                  OpenWisper --preview-ui [--preview-state recording|processing|review|failure|cancelled]
 
+                Indicator previews show the bottom-of-screen capsule. --preview-detached is accepted for compatibility.
                 The CLI never requests microphone or Accessibility permission.
                 --transcribe-wav requires mono 16 kHz signed 16-bit PCM WAV and prints the transcript.
                 Use the packaged .app for microphone capture and a stable permission identity.
@@ -58,9 +61,31 @@ import WisperPlatform
                 return
             }
             if let path = value(after: "--render-preview") {
-                try renderPreview(to: URL(fileURLWithPath: path), settings: arguments.contains("--preview-settings"),
+                try await renderPreview(to: URL(fileURLWithPath: path), settings: arguments.contains("--preview-settings"),
                                   memory: arguments.contains("--preview-memory"), light: arguments.contains("--preview-light"),
-                                  compact: arguments.contains("--preview-compact"))
+                                  compact: arguments.contains("--preview-compact"), state: value(after: "--preview-state") ?? "idle",
+                                  indicator: false, detached: false)
+                return
+            }
+            if let path = value(after: "--render-indicator") {
+                try await renderPreview(to: URL(fileURLWithPath: path), settings: false, memory: false, light: false,
+                    compact: false, state: value(after: "--preview-state") ?? "recording", indicator: true,
+                    detached: arguments.contains("--preview-detached"))
+                return
+            }
+            if arguments.contains("--preview-ui") {
+                let app = NSApplication.shared
+                let session = UIPreview.makeSession()
+                let delegate = AppDelegate(model: AppModel(preview: true, previewSession: session))
+                app.delegate = delegate
+                Task { @MainActor in
+                    do { try await UIPreview.configure(session, state: value(after: "--preview-state") ?? "recording") }
+                    catch {
+                        FileHandle.standardError.write(Data((error.localizedDescription + "\n").utf8))
+                        app.terminate(nil)
+                    }
+                }
+                withExtendedLifetime(delegate) { app.run() }
                 return
             }
             guard arguments.isEmpty || (arguments.count == 2 && arguments[0] == "--profile" && profile != nil) else {
@@ -89,24 +114,40 @@ import WisperPlatform
         return try RecordedAudio(wavData: file.read(upToCount: 9_665_537) ?? Data())
     }
 
-    @MainActor private static func renderPreview(to url: URL, settings: Bool, memory: Bool, light: Bool, compact: Bool) throws {
+    @MainActor private static func renderPreview(to url: URL, settings: Bool, memory: Bool, light: Bool, compact: Bool,
+                                                state: String, indicator: Bool, detached: Bool) async throws {
         let app = NSApplication.shared
         app.setActivationPolicy(.prohibited)
         app.appearance = NSAppearance(named: light ? .aqua : .darkAqua)
-        let model = AppModel(preview: true)
+        let session = try await UIPreview.session(state: state)
+        let model = AppModel(preview: true, previewSession: session)
         model.settingsOpen = settings
-        let size = NSSize(width: compact ? 460 : 500, height: compact ? 540 : settings ? 760 : 590)
+        let screenFrame = NSScreen.main?.frame ?? CGRect(x: 0, y: 0, width: 1440, height: 900)
+        let visibleFrame = NSScreen.main?.visibleFrame ?? screenFrame
+        let feedback: IndicatorFeedback = state == "cancelled" ? .cancelled :
+            IndicatorFeedback(phase: session.phase, needsReview: session.needsReview, outcome: session.deliveryResult?.outcome)
+        let layout = IndicatorLayout(screen: screenFrame, visibleFrame: visibleFrame,
+            phase: session.phase, feedback: feedback)
+        let size = indicator ? layout.frame.size : NSSize(width: compact ? 340 : 360, height: compact ? 420 : 480)
         let window = NSWindow(contentRect: NSRect(origin: .zero, size: size),
                               styleMask: [.borderless], backing: .buffered, defer: false)
-        let view = NSHostingView(rootView: MainView(model: model, session: model.coordinator,
-            previewMemory: memory ? TranscriptionMemory(peakResidentBytes: 128 * 1_024 * 1_024) : nil))
+        let content: AnyView = indicator
+            ? AnyView(RecordingIndicatorView(session: session, layout: layout,
+                feedback: feedback,
+                setupRequired: false, stop: {}, cancel: {}, review: {}, copy: {}, dismiss: {}))
+            : AnyView(MainView(model: model, session: session,
+                previewMemory: memory ? TranscriptionMemory(peakResidentBytes: 128 * 1_024 * 1_024) : nil))
+        let view = NSHostingView(rootView: content)
         view.frame = NSRect(origin: .zero, size: size)
         window.contentView = view
+        window.isOpaque = !indicator
+        window.backgroundColor = indicator ? .clear : .windowBackgroundColor
         view.layoutSubtreeIfNeeded()
         guard let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { throw WisperError.message("Couldn’t create the UI preview bitmap.") }
         view.cacheDisplay(in: view.bounds, to: bitmap)
         guard let png = bitmap.representation(using: .png, properties: [:]) else { throw WisperError.message("Couldn’t encode the UI preview.") }
         try png.write(to: url)
+        await session.shutdown()
         window.close()
     }
 }
