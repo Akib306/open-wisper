@@ -1,0 +1,18 @@
+[package]
+name = "wisper-platform"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+
+[lib]
+name = "wisper_platform"
+
+[dependencies]
+rubato = { version = "=0.16.2", default-features = false }
+rtrb = "=0.3.2"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+coreaudio-sys = "=0.2.18"
+objc2 = "=0.6.3"
+objc2-foundation = { version = "=0.3.2", default-features = false, features = ["std", "NSString", "NSURL"] }
+block2 = "=0.6.2"

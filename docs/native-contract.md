@@ -1,6 +1,6 @@
 # Native v1 behavior contract
 
-Status: **v1 target contract**. The [Swift 1.0.0 candidate](releases/swift-v1.0.0.md) implements the core workflow; [verification status](swift-status.md) records completed checks and remaining conformance work. Rust remains planned; the [handoff](rust-handoff.md) carries these invariants forward. This is our product contract, not a recovered Wispr specification.
+Status: **v1 target contract**. The [Swift 1.0.0 candidate](releases/swift-v1.0.0.md) implements the core workflow; [verification status](swift-status.md) records completed checks and remaining conformance work. The [independent Rust developer preview](../native/rust/README.md) is implemented, with [explicit gaps and pending conformance checks](rust-status.md); the [handoff](rust-handoff.md) carries the baseline invariants. Neither compilation nor packaging establishes full contract conformance. This is our product contract, not a recovered Wispr specification.
 
 ## Product boundary
 
@@ -13,7 +13,7 @@ Status: **v1 target contract**. The [Swift 1.0.0 candidate](releases/swift-v1.0.
 
 ## Visual direction
 
-[ADR-0002](decisions/0002-bottom-pill.md) specifies a solid petrol bottom pill for Swift and planned Rust, centered and bounded in the usable work area at `visibleFrame.minY + 28` pt. No notch integration. Both use an independent 360 × 480 pt Pebble window (minimum 340 × 420 pt), opened only explicitly. Coordinator state drives all indicator status; first-click Stop/Cancel does not activate the app. Status opens Pebble, Review selects transcript review, and setup opens Settings. Brief success/cancel feedback and persistent fallback review do not change the delivery and focus rules below. Swift source implements this direction; remaining native conformance checks are recorded in [Swift status](swift-status.md).
+[ADR-0002](decisions/0002-bottom-pill.md) specifies a solid petrol bottom pill for Swift and Rust, centered and bounded in the usable work area at `visibleFrame.minY + 28` pt. No notch integration. Both use an independent 360 × 480 pt Pebble window (minimum 340 × 420 pt), opened only explicitly. Coordinator state drives all indicator status; first-click Stop/Cancel does not activate the app. Status opens Pebble, Review selects transcript review, and setup opens Settings. Brief success/cancel feedback and persistent fallback review do not change the delivery and focus rules below. Both source implementations follow this direction; remaining native conformance checks are recorded in [Swift status](swift-status.md) and [Rust status](rust-status.md).
 
 ## Ports
 

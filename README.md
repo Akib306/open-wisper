@@ -19,15 +19,22 @@ This preview is ad-hoc signed and is **not notarized by Apple**. If macOS blocks
 
 In the release's Assets list, choose **Open-Wisper-Swift-1.0.0-rc.1-macos-arm64.zip**. GitHub's **Source code (zip)** and **Source code (tar.gz)** downloads contain source code rather than the app. This build is for Apple Silicon; an Intel download is not available.
 
-The default model is `base.en`; Settings also offers `tiny.en-q5_1` and `small.en`. Model comparisons and the pending live acceptance checks are recorded in the [release record](docs/releases/swift-v1.0.0.md). Rust is the next independent application; the Electron MVP remains a reference.
+The default model is `base.en`; Settings also offers `tiny.en-q5_1` and `small.en`. Model comparisons and the pending live acceptance checks are recorded in the [release record](docs/releases/swift-v1.0.0.md). An independent [Rust developer preview](native/rust/README.md) is also implemented; the Electron MVP remains a reference. The downloadable release above is the Swift application, not Rust.
 
 ## For developers
 
 Building from source is optional. See the [Swift developer guide](native/swift/README.md#build-from-source-developers) for toolchain requirements, engine provisioning, packaging, and tests.
 
+For the independent Rust app, see the [Rust build and usage guide](native/rust/README.md) and [verification status](docs/rust-status.md). It uses native AppKit without Swift or a WebView, has its own macOS permissions and settings, and reuses the same pinned local engine/model artifacts. Automatic browser Paste and automatic crash-audio recovery are not implemented; live microphone, focus, permission and editor acceptance remain pending. To build the app from the repository root with Rust and the existing verified engine/model cache available:
+
+```sh
+python3 native/rust/scripts/build-app.py
+```
+
 - [Swift 1.0.0 release record](docs/releases/swift-v1.0.0.md): reviewed scope, fixes, downloadable artifact, and remaining live acceptance checks.
 - [Swift verification status](docs/swift-status.md): completed checks and remaining release gates.
-- [Rust handoff](docs/rust-handoff.md) and [native implementation plan](docs/native-plan.md): next implementation slices, architecture, and comparison gates.
+- [Rust developer guide](native/rust/README.md) and [verification status](docs/rust-status.md): implementation, packaging, safety limitations, and pending native checks.
+- [Rust handoff](docs/rust-handoff.md) and [native implementation plan](docs/native-plan.md): baseline decisions, architecture, and comparison gates.
 - [Native v1 behavior contract](docs/native-contract.md): shared behavior and acceptance scenarios for both implementations.
 - [UI decision](docs/decisions/0002-bottom-pill.md): bottom recording pill and separate Pebble window.
 - [macOS updates and permissions](docs/macos-updates.md): signing decisions and the deferred OTA update workflow.

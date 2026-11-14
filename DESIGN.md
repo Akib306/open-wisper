@@ -1,6 +1,6 @@
 # Approved native UI direction
 
-Accepted November 14, 2026 for native Swift and the planned independent Rust application. The Electron MVP retains its separate UI. [ADR-0002](docs/decisions/0002-bottom-pill.md) supersedes the shape and placement decision in ADR-0001. Swift implements the bottom pill; Rust remains planned. See [Swift verification status](docs/swift-status.md) for evidence and limitations.
+Accepted November 14, 2026 for native Swift and the independent Rust application. The Electron MVP retains its separate UI. [ADR-0002](docs/decisions/0002-bottom-pill.md) supersedes the shape and placement decision in ADR-0001. Swift and the Rust developer preview implement the bottom pill. See [Swift verification status](docs/swift-status.md) and [Rust verification status](docs/rust-status.md) for evidence and limitations; Rust's native appearance and interaction have not yet been validated live.
 
 ## Recording indicator
 

@@ -1,8 +1,8 @@
 # Independent Rust and Swift implementation plan
 
-Status: **Swift development baseline implemented; Rust remains planned**. Read the [investigation](research/wispr-flow.md) for observations and [v1 contract](native-contract.md) for the target behavior. [Swift verification status](swift-status.md) distinguishes implemented features, completed checks, and open release gates. The later experiments and optional capabilities below remain plans.
+Status: **Swift development baseline and independent Rust developer preview implemented**. Read the [investigation](research/wispr-flow.md) for observations and [v1 contract](native-contract.md) for the target behavior. [Swift verification status](swift-status.md) and [Rust verification status](rust-status.md) distinguish implemented features, completed checks, explicit gaps and open release gates. The later experiments and optional capabilities below remain plans.
 
-The [Swift 1.0.0 release record](releases/swift-v1.0.0.md) closes the current feature baseline with explicit remaining live checks. Use the [Rust handoff](rust-handoff.md) when starting the next independent implementation; the plan below retains its original sequence and proposed experiments.
+The [Swift 1.0.0 release record](releases/swift-v1.0.0.md) closes its feature baseline with explicit remaining live checks. The [Rust handoff](rust-handoff.md) records baseline requirements for the implementation now in [`native/rust`](../native/rust/README.md); the plan below retains its original sequence and proposed experiments.
 
 ## Decision
 

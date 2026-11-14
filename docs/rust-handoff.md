@@ -1,5 +1,7 @@
 # Rust handoff from Swift v1
 
+Implementation update, November 14, 2026: the independent Rust application now lives in [`native/rust`](../native/rust/README.md). See [Rust verification status](rust-status.md) for automated results, unsupported browser Paste, manual crash-audio cleanup, and remaining live gates. This handoff remains the baseline specification, not a claim that every requirement has passed.
+
 Swift v1 is the feature baseline described in the [release record](releases/swift-v1.0.0.md). Rust is the next independent application, as agreed in the [native plan](native-plan.md); this document captures what must carry forward. It does not claim Swift's pending live acceptance checks have passed.
 
 ## Keep these decisions
