@@ -1,5 +1,30 @@
 # Swift implementation and verification
 
+## Swift 1.0.0 release review — November 14, 2026
+
+The Swift feature baseline is now a **1.0.0/build 2 release candidate**. The [release record](releases/swift-v1.0.0.md) documents scope, review findings, build/update/recovery procedures, and pending live acceptance. The [changelog](../native/swift/CHANGELOG.md) records user-visible behavior; the [Rust handoff](rust-handoff.md) preserves the independent implementation plan and unresolved evidence. No public release or git tag has been created.
+
+Two scoped review passes covered all 26 Swift source files plus the C ring/header and their tests; integration review also covered package/resources, engine provisioning/packaging, and documentation. The starting source baseline was `332e1df`; the reviewed fixes and release documents are working-tree changes until committed. No speculative refactor, new dependency, Rust implementation, or privacy-setting change was added.
+
+**Fixed, medium:** synchronous cancellation during preparation, finalization, or transcription transitions could still start the operation following that transition. Three session-current guards now prevent that work after revocation. Regressions first observed an unwanted microphone request, capture Stop, and transcriber invocation, then passed after the fixes. **Fixed, low:** clearing an engine profile during verification could leave the UI's checking state stuck; it now resets before the empty-profile return. Release packaging now declares 1.0.0/build 2 and includes upstream engine/model and embedded utility license notices before signing.
+
+| Verification | Result |
+| --- | --- |
+| Integrated Swift suite | **107 tests across 20 suites passed**, `swift test --package-path native/swift --no-parallel`; final run 14.371 s. No assertions, deadlines, or tests were weakened/skipped. |
+| Regression strength | Temporarily removing the transcription-transition guard made `cancellationAtTranscribingDoesNotStartWorker` fail on `engine.calls == 0`. Source was restored immediately; the complete 107-test run then passed. All four new regressions also failed before their respective fixes in focused review. |
+| Engine packager | **9 Python tests passed**, covering cached/downloaded hashes, partial-download cleanup, HTTPS redirects, relocatable manifests, nested signing, and system-only dependencies. |
+| Release packaging | Production build, bootstrap profile verification, all three packaged model/engine integrity checks, and strict recursive bundle signature verification passed. No compiler warnings; the expected ad-hoc identity warning remains. |
+| Real worker | The packaged `base.en` CLI completed against a generated one-second mono 16 kHz PCM16 silent WAV. This exercised real model loading/inference and workspace/process cleanup without a microphone; it is not a speech-accuracy or live-delivery test. The subsequent notice-only repackaging retained the same engine bytes. |
+| Static/document checks | Shell syntax, plist syntax/version, local Markdown targets, exact upstream license text inclusion, copied bundle notices, and `git diff --check` passed. |
+
+Environment: Apple Silicon, macOS 27.2.1 (26B131), Apple Swift 6.2/Xcode toolchain. The first sandboxed Swift attempt could not write compiler caches; successful runs used the required compiler and AppKit/pasteboard services. This does not establish macOS 14 or Intel compatibility. SwiftPM has no external package dependencies; the separately bundled engine is hash-pinned, not certified free of upstream vulnerabilities. A fresh upstream advisory review remains a public-distribution gate.
+
+The final candidate is `native/swift/dist/Open Wisper Swift.app`. Executable SHA-256: `38341e550aa604f76d47e272dd3c3fd42e2ef30a6469d14d732e6982605018d8`. Packaged worker SHA-256: `0990ae3e2fd0411997099bf2a0db3a77628d3aad4684d45943bd011efee01327`. Packaged notices SHA-256: `e3262f8f41da61c71e900257e5cdba34290154109c0cf8ba64613499cde5c287`. The three profiles record their model hashes and packaged worker identity. Build output remains ignored by git.
+
+This work did not replace or relaunch `/Applications/Open Wisper Swift.app`; its executable was observed read-only at SHA-256 `acfe7397807c3f018597f0ab6edb285cfa1330eedc2cd1325c177d8b557ca984`. Source changes and a staged candidate do not update that running installation. No real microphone, cross-app insertion, or general clipboard-content inspection was used; tests exercised private named pasteboards. Account login/MFA prompts: **zero**. Ad-hoc installation can still require renewed macOS consent.
+
+The intermittent Copy fallback remains unconfirmed. Live microphone/device, scratch-editor/clipboard-manager, display/full-screen, VoiceOver, shortcut-conflict, permission-continuity, minimum-OS and Intel checks remain explicitly pending in the release record. No reviewed defect remains unfixed, but these missing observations prevent a claim that the complete release suite has passed. A project distribution license also remains unselected. The entries below are historical checkpoints; their artifact identities and UI decisions describe their own dates.
+
 ## Bottom pill restored — November 14, 2026
 
 [ADR-0002](decisions/0002-bottom-pill.md) replaces the Swift island with a solid petrol bottom pill in every visible state, also selected for planned Rust. Placement centers within `visibleFrame`, 28 pt above its bottom, with bounds for smaller work areas. Camera geometry no longer changes the shell or placement. Pebble remains a separate Settings/Review window.

@@ -31,6 +31,18 @@ struct UIPreviewTests {
         #expect(model.settings.maximumDuration == 60)
     }
 
+    @Test func clearingProfileWhileVerificationIsRunningStopsChecking() {
+        let model = AppModel(preview: true)
+        model.settings.engineProfilePath = "/fixture/missing-profile.json"
+        model.verifyEngine()
+        #expect(model.checkingEngine)
+        model.settings.engineProfilePath = ""
+        model.verifyEngine()
+        #expect(!model.checkingEngine)
+        #expect(!model.engineReady)
+        #expect(model.engineDescription == "Choose a local engine profile to get started.")
+    }
+
     @Test func invalidFixtureIsRejected() async {
         await #expect(throws: WisperError.self) { try await UIPreview.session(state: "unknown") }
     }

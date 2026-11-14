@@ -51,7 +51,9 @@ actor FakeTranscriber: Transcriber {
 @MainActor final class FakePermissions: Permissions {
     var gate: TestGate?
     var denied = false
+    var requests = 0
     func requestMicrophoneIfNeeded() async throws {
+        requests += 1
         await gate?.wait()
         if denied { throw WisperError.message("Microphone access is off.") }
     }
@@ -217,6 +219,53 @@ struct SessionCoordinatorTests {
         try await eventually { coordinator.phase == .idle }
         #expect(coordinator.transcript.isEmpty)
         #expect(delivery.insertions == 0 && delivery.copies == 0)
+        #expect(coordinator.deliveryResult?.outcome == .cancelled)
+    }
+
+    @Test func cancellationAtTranscribingDoesNotStartWorker() async throws {
+        let engine = FakeTranscriber()
+        let coordinator = SessionCoordinator(capture: FakeCapture(), transcriber: engine,
+                                              permissions: FakePermissions(), delivery: FakeDelivery())
+        coordinator.onTransition = { [weak coordinator] phase in
+            if phase == .transcribing { coordinator?.requestCancel() }
+        }
+        coordinator.start(configuration: configuration())
+        try await eventually { coordinator.phase == .recording }
+        coordinator.stop()
+        try await eventually { coordinator.phase == .idle }
+        #expect(await engine.calls == 0)
+        #expect(coordinator.deliveryResult?.outcome == .cancelled)
+    }
+
+    @Test func cancellationAtPreparingDoesNotRequestMicrophoneAfterCleanup() async throws {
+        let permissions = FakePermissions()
+        let coordinator = SessionCoordinator(capture: FakeCapture(), transcriber: FakeTranscriber(),
+                                              permissions: permissions, delivery: FakeDelivery())
+        coordinator.onTransition = { [weak coordinator] phase in
+            if phase == .preparing { coordinator?.requestCancel() }
+        }
+        coordinator.start(configuration: configuration())
+        await coordinator.cancel()
+        await Task.yield()
+        #expect(coordinator.phase == .idle)
+        #expect(permissions.requests == 0)
+        #expect(coordinator.deliveryResult?.outcome == .cancelled)
+    }
+
+    @Test func cancellationAtFinalizingDoesNotStartAStopAfterCleanup() async throws {
+        let capture = FakeCapture(), delivery = FakeDelivery()
+        let coordinator = SessionCoordinator(capture: capture, transcriber: FakeTranscriber(),
+                                              permissions: FakePermissions(), delivery: delivery)
+        coordinator.onTransition = { [weak coordinator] phase in
+            if phase == .finalizing { coordinator?.requestCancel() }
+        }
+        coordinator.start(configuration: configuration())
+        try await eventually { coordinator.phase == .recording }
+        coordinator.stop()
+        await coordinator.cancel()
+        await Task.yield()
+        #expect(coordinator.phase == .idle)
+        #expect(capture.stops == 0)
         #expect(coordinator.deliveryResult?.outcome == .cancelled)
     }
 

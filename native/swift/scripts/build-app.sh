@@ -51,6 +51,7 @@ trap cleanup_staging EXIT
 mkdir -p "$STAGED_APP/Contents/MacOS" "$STAGED_APP/Contents/Resources"
 cp "$BIN_DIR/OpenWisper" "$STAGED_APP/Contents/MacOS/OpenWisper"
 cp "$SWIFT_DIR/Resources/Info.plist" "$STAGED_APP/Contents/Info.plist"
+cp "$SWIFT_DIR/Resources/THIRD-PARTY-NOTICES.txt" "$STAGED_APP/Contents/Resources/THIRD-PARTY-NOTICES.txt"
 
 PROFILE="${OPEN_WISPER_PROFILE:-$REPO_DIR/tools/engine/runtime/manifest.json}"
 "$BIN_DIR/OpenWisper" --check-profile --profile "$PROFILE"

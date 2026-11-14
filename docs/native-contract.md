@@ -1,15 +1,15 @@
 # Native v1 behavior contract
 
-Status: **v1 target contract**. The [Swift baseline](../native/swift/README.md) implements the core workflow; [verification status](swift-status.md) records remaining conformance and release work. Rust remains planned. This is our product contract, not a recovered Wispr specification.
+Status: **v1 target contract**. The [Swift 1.0.0 candidate](releases/swift-v1.0.0.md) implements the core workflow; [verification status](swift-status.md) records completed checks and remaining conformance work. Rust remains planned; the [handoff](rust-handoff.md) carries these invariants forward. This is our product contract, not a recovered Wispr specification.
 
 ## Product boundary
 
-- macOS-first, initially Apple Silicon; select and validate the minimum OS during the platform spikes.
+- macOS-first, initially Apple Silicon. Swift declares macOS 14 or later; actual minimum-OS/Intel compatibility still needs validation. Rust must select and validate its own supported deployment target.
 - Menu-bar application, settings/result review window, and a nonactivating recording indicator.
 - Configurable registered combination shortcut; default `Command+Shift+Space`. Toggle recording first; hold-to-talk and Fn-only are later capabilities.
 - Local transcription after explicit engine/model provisioning. No account, service key, subscription, or runtime download required for baseline dictation.
 - Cursor insertion is the default workflow, following the user's October 31 correction. One explicit Accessibility setup enables delivery; explicit review/Copy remains available. Completion never activates the app automatically.
-- Start with the same English model as the Electron baseline. Multilingual support is a separate tested profile.
+- Swift bundles English `tiny.en-q5_1`, `base.en` (default), and `small.en`. For comparisons with Electron or Rust, explicitly select the same model and exact engine/profile rather than assuming both defaults match. Multilingual support is a separate tested profile.
 
 ## Visual direction
 
@@ -61,7 +61,7 @@ Share an engine manifest containing exact source commit, executable SHA-256, mod
 
 Use private per-session directories and files for the CLI adapter. Put creation/writing inside cleanup-protected lifetime management. Normal completion, failure, cancel, and timeout remove owned files. Startup recovery only removes safely recognized application-owned stale entries without following symlinks; never recursively delete arbitrary user-supplied paths. Process crashes may leave files until recovery. Deletion is not secure erasure.
 
-The primary proposed fixture profile is `whisper.cpp` v1.8.1 / `tiny.en-q5_1`, matching existing documentation; verify the actual commit and runtime/model hashes before adopting it. A separate `base.en` quantized profile measures quality trade-offs. Never silently substitute one model/build for another.
+The shipped Swift profiles use `whisper.cpp` v1.8.1, pinned commit `a91dd3be72f70dd1b3cb6e252f35fa17b93f596c`, CPU/Apple Accelerate, four threads, English, and a short-lived worker. The default is unquantized `base.en`, with `tiny.en-q5_1` and unquantized `small.en` as explicit alternatives; the bootstrap provisioner uses `small.en` as the source profile. See the [engine guide](../tools/engine/README.md) for exact hashes, arguments and provenance limits. These model options remain experimental without controlled comparative results. Never silently substitute one model/build for another.
 
 ## Delivery safety
 

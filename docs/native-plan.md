@@ -2,6 +2,8 @@
 
 Status: **Swift development baseline implemented; Rust remains planned**. Read the [investigation](research/wispr-flow.md) for observations and [v1 contract](native-contract.md) for the target behavior. [Swift verification status](swift-status.md) distinguishes implemented features, completed checks, and open release gates. The later experiments and optional capabilities below remain plans.
 
+The [Swift 1.0.0 release record](releases/swift-v1.0.0.md) closes the current feature baseline with explicit remaining live checks. Use the [Rust handoff](rust-handoff.md) when starting the next independent implementation; the plan below retains its original sequence and proposed experiments.
+
 ## Decision
 
 Build **two independently shippable macOS applications**, not one Rust core with a Swift wrapper. Share specifications, original fixtures, engine provenance, and benchmark methodology. Initially invoke the same pinned `whisper-cli` executable and model from both applications, retaining Electron as a third baseline.

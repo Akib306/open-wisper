@@ -161,6 +161,7 @@ public struct SessionMetrics: Codable, Sendable {
         target = nil
         delivery.discardTarget()
         transition(.preparing)
+        guard isCurrent(id) else { return }
         operation = Task { [weak self] in
             guard let self else { return }
             do {
@@ -205,6 +206,7 @@ public struct SessionMetrics: Codable, Sendable {
         durationLimit = nil
         let stoppedAt = ContinuousClock.now
         transition(.finalizing)
+        guard isCurrent(id) else { return }
         operation = Task { [weak self] in
             guard let self else { return }
             do {
@@ -214,6 +216,7 @@ public struct SessionMetrics: Codable, Sendable {
                 guard isCurrent(id) else { return }
                 try Task.checkCancellation()
                 transition(.transcribing)
+                guard isCurrent(id) else { return }
                 let raw = try await transcriber.transcribe(audio: audio, profileURL: configuration.profileURL,
                                                            timeout: configuration.workerTimeout)
                 guard isCurrent(id) else { return }

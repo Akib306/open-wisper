@@ -135,6 +135,7 @@ extension WhisperTranscriber: Transcriber {}
         verification?.cancel()
         hashVerification?.cancel()
         engineReady = false
+        checkingEngine = false
         guard !settings.engineProfilePath.isEmpty else {
             engineDescription = "Choose a local engine profile to get started."
             return

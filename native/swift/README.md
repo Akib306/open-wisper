@@ -2,6 +2,8 @@
 
 A compact native menu-bar app implemented in Swift 6, AppKit, and SwiftUI. It records with AVAudioEngine, converts audio off the realtime callback, invokes a pinned local whisper.cpp worker, and inserts into the text field focused when recording stops. The Swift application has no Electron or Rust dependency. A small C11 atomic ring provides the realtime buffer handoff.
 
+**Version 1.0.0, build 2 — release candidate.** See the [release record](../../docs/releases/swift-v1.0.0.md) for the final Swift scope, code-review findings, verification and pending live checks, the [changelog](CHANGELOG.md) for user-facing changes, and the [Rust handoff](../../docs/rust-handoff.md) for the next track.
+
 ## Build and launch
 
 Requires macOS 14 or later, an Apple Swift 6 toolchain (validated here with Swift 6.2 on Apple Silicon), and Python 3 for provisioning/packaging. Building the engine from scratch also requires CMake. Run from the repository root:
@@ -21,6 +23,8 @@ The build script refuses to replace a running app, because rebuilding does not u
 The local bundle is ad-hoc signed with the stable ID `dev.akib.openwisper.swift`. It is not notarized. To use an existing signing identity, set `SIGNING_IDENTITY` when building. Rebuilding an ad-hoc-signed app may require renewed macOS permission setup; keep one packaged copy at a stable location while testing.
 
 Packaging assembles and validates a fresh staging bundle before replacing the stopped app, signs the nested worker before recording its packaged hash, and rejects engines with non-system dynamic dependencies. Failed downloads or signing leave the previous installation untouched. For durable signing and the proposed Sparkle OTA workflow, see [macOS updates and permissions](../../docs/macos-updates.md). No automatic updater is enabled yet.
+
+The bundle includes engine/model licenses at `Contents/Resources/THIRD-PARTY-NOTICES.txt`, copied from [the source notice file](Resources/THIRD-PARTY-NOTICES.txt) before signing. These third-party notices do not select a license for the project's own source code.
 
 Current development choice: keep ad-hoc signing without Apple Developer account setup. Revisit Sparkle only after the Rust app is implemented and the UI is polished; permission renewal may remain necessary in the meantime.
 
@@ -57,7 +61,7 @@ Account login/MFA prompts: **zero**. macOS may request Touch ID or a password wh
 
 ```sh
 swift build --package-path native/swift
-swift test --package-path native/swift
+swift test --package-path native/swift --no-parallel
 native/swift/.build/debug/OpenWisper --check-profile --profile tools/engine/runtime/manifest.json
 native/swift/.build/debug/OpenWisper --transcribe-wav /path/audio.wav --profile tools/engine/runtime/manifest.json
 ```
@@ -109,4 +113,4 @@ Inference uses private `0700` directories named `session-<UUID>` within the curr
 
 Implemented: English local dictation, menu/status UI, registered configurable toggle shortcut, recording indicator, native audio conversion, cancellation/limits, supervised CLI, profile validation, cursor insertion with direct AX/guarded Paste, quiet review/Copy fallback, atomic settings, and content-free monotonic session timings.
 
-Not implemented: hold/Fn-only shortcuts, device picker, resident/streaming inference, VAD, history, snippets, rewrite, launch-at-login, multilingual profiles, updater, or external comparative memory benchmarks. These remain separate planned work. The app is a functional development baseline; it does not claim Wispr parity or completion of the entire native release suite.
+Not implemented: hold/Fn-only shortcuts, device picker, resident/streaming inference, VAD, history, snippets, rewrite, launch-at-login, multilingual profiles, updater, or external comparative memory benchmarks. These remain separate planned work. This is the Swift v1 feature baseline; it does not claim Wispr parity or completion of the entire native release suite. The release record retains the outstanding live acceptance gates.
