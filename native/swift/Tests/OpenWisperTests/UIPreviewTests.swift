@@ -5,7 +5,7 @@ import WisperCore
 
 @Suite("Permission-free UI fixtures") @MainActor
 struct UIPreviewTests {
-    @Test(arguments: ["idle", "recording", "processing", "review", "failure", "cancelled"])
+    @Test(arguments: ["idle", "recording", "processing", "review", "long-review", "copied", "copy-failed", "failure", "cancelled"])
     func fixturesReachTheirDeclaredState(state: String) async throws {
         let session = try await UIPreview.session(state: state)
         switch state {
@@ -13,6 +13,9 @@ struct UIPreviewTests {
         case "recording": #expect(session.phase == .recording && session.recordingStartedAt != nil)
         case "processing": #expect(session.phase == .transcribing)
         case "review": #expect(session.needsReview && !session.transcript.isEmpty)
+        case "long-review": #expect(session.needsReview && session.transcript.count > 3_000)
+        case "copied": #expect(!session.transcript.isEmpty && session.deliveryResult?.outcome == .copied)
+        case "copy-failed": #expect(session.needsReview && session.deliveryResult?.outcome == .copyFailed)
         case "failure": #expect(session.needsReview && session.failure != nil)
         case "cancelled": #expect(!session.phase.isActive && session.transcript.isEmpty)
         default: Issue.record("Unexpected preview state")

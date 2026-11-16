@@ -1,5 +1,42 @@
 # Swift implementation and verification
 
+## UI simplification and audit — November 15, 2026
+
+The [scored UX audit](research/ui-audit-2026-11-15.md) records an expert heuristic assessment of **25/40 before → 31/40 after**, and technical quality **13/20 → 14/20**. Simplified copy, actionable engine setup, visible verification status, empty Review, pinned Copy/Clear actions for long transcripts, typed Copy failure, brief Copied feedback, and Command-1/2/3 navigation preserve the approved Pebble style and existing memory-only transcript lifetime. The transcription peak remains visible.
+
+**117 tests across 22 suites passed**, including three native AppKit keyboard journeys. Native light/dark/minimum/default/wide renders were inspected in two bounded rounds. Independent final source review found no required changes. Live desktop screenshot capture and later external AX traversal were unavailable; VoiceOver, live permissions/insertion and the display/focus acceptance matrix remain unverified by this UI task. The audit distinguishes those limits from the passing synthetic checks.
+
+The release build is staged separately at `native/swift/dist/Open Wisper Swift UI Update.app`, executable SHA-256 `a80305cf0cfa08b000326923673ac63c01348c419d0603d9d24083a44ca95c98`. Strict recursive signature verification and all three bundled engine/model checks passed. `/Applications/Open Wisper Swift.app` and its current in-memory transcript were preserved. No account login/MFA or permission change was needed; installing the ad-hoc update can require renewed Accessibility consent. This task did not publish a new release.
+
+The user subsequently requested replacement of the installed app. No app or transcription worker was running at that point. The verified bundle replaced `/Applications/Open Wisper Swift.app` and launched successfully; its installed executable matches the SHA-256 above. Installed signature and all three engine/model checks passed. The prior bundle is preserved only as a rollback copy at `/private/tmp/open-wisper-before-ui-install-azmtmg2b/Open Wisper Swift.app`.
+
+The new running process reported automatic insertion enabled but Accessibility denied after the ad-hoc identity change. Only the stale **Open Wisper Swift.app** entry was selected for renewal in System Settings. One macOS Touch ID/password sheet was observed; it subsequently closed and the stale entry was confirmed removed. No credential was supplied through the secure request, which timed out. Other applications' entries were not changed, and no microphone capture was started.
+
+Automatic approval review initially rejected the subsequent Add action: it classified Accessibility as a persistent security permission and required explicit authorization beyond the installation request. The action waited for that approval.
+
+After the user's explicit **Allow Accessibility access** response, the exact `/Applications/Open Wisper Swift.app` file-picker URL was verified and the replacement bundle was added through System Settings. Its Accessibility checkbox is enabled. The existing running app's `--check-delivery` report confirms `source: "running Swift app"`, `accessibilityGranted: true`, and `automaticInsertion: true`; no restart was required. No additional password or Touch ID prompt appeared during the approved Add sequence. The installed executable still matches SHA-256 `a80305cf0cfa08b000326923673ac63c01348c419d0603d9d24083a44ca95c98`. The focused System Settings outline is not an editable field, so `eligibleFocusedField` is false for that check. No microphone recording or insertion into a user document was initiated; end-to-end live dictation remains unverified. Other applications' permission entries were unchanged.
+
+## Cursor delivery and visible memory repair — November 15, 2026
+
+History review confirmed that `4bbf863` already contained the prior browser Paste and focus safeguards. Peak RSS collection from `5d9a6b2` also remained intact; `332e1df` hid its presentation behind a collapsed Engine details section. Ready and Review now keep the retained reading, or its pre-run placeholder, in a footer visible at the 340 × 420 pt minimum size. Recording controls and long review content remain scrollable.
+
+A real AppKit `NSTextView` reproduced a delivery defect: its focused `AXTextArea` exposed a selection and writable `AXSelectedText`, but reading `AXEnabled` returned `attributeUnsupported` (-25205). The adapter discarded that error and treated the field as disabled. It now accepts this definitive unsupported case only with positive editability evidence. Explicit false, malformed values, missing values, and other AX errors still block delivery. The content-free report distinguishes unsupported from disabled. Process identity, selection, secure ancestry, terminal restrictions, single-use delivery, and clipboard ownership checks remain intact.
+
+Focus lookup also follows explicit nested focused-element links within the same process, bounded to 16 elements and a 250 ms traversal budget. It does not search unrelated editable descendants. A synthetic focused-container regression failed before this correction; that case was not observed in the live Chrome trials.
+
+Verification:
+
+- **113 tests across 21 suites passed.** The unsupported-enabled regression failed before the fix. Removing the nested-focus deadline guard also made its regression fail, after which source was restored. One earlier full run hit the existing cancellation timing assertion at 1.013 s against a 1 s limit; isolation passed at 0.100 s and both subsequent full runs passed without changing the assertion.
+- The native scratch app rejected insertion before the enabled-attribute fix and received the exact generated test text afterward through selected-text replacement.
+- Real Chrome textarea and contenteditable scratch fields received the exact generated text through guarded Paste with the final delivery code. Test windows were closed afterward. These checks used a helper linked to the production Swift modules under the host's existing Accessibility identity; they do not establish the replacement GUI's TCC grant or universal editor compatibility. No microphone recording or insertion into user documents was performed.
+- Production packaging, all three bundled engine/model integrity checks, and strict recursive signature verification passed. Offscreen inspection confirmed the memory footer and placeholder in both appearances, including minimum-size layouts.
+
+The verified candidate is `native/swift/dist/Open Wisper Swift.app`, executable SHA-256 `480dddb55c3f0a16d36f5dbc87817365966b17896b8fc011d2342f430f2f716a`. The installed app was initially left running because its Review controls indicated a retained transcript. The user subsequently authorized installation and clearing that transcript. Unrelated Rust work was preserved.
+
+The previous bundle was backed up at `/private/tmp/open-wisper-swift-before-restoration-15ty4q2f/Open Wisper Swift.app`. After normal termination, the verified candidate replaced `/Applications/Open Wisper Swift.app`; its executable hash matches the candidate, and its strict recursive signature check passed. The new running GUI initially reported Accessibility denied. Only its stale Swift entry was removed and the exact installed bundle re-added through System Settings. One macOS authentication sheet was observed; no account login/MFA was needed and no credentials were collected or stored. Other applications' permission entries were not changed.
+
+The final report from **running Swift app** returned `automaticInsertion: true`, `accessibilityGranted: true`, and `eligibleFocusedField: true` for the dedicated Chrome scratch textarea, including its writable selection and web ancestry metadata. The scratch window was closed and the updated Swift window reopened. A subsequent user-created result in the new process was preserved; the app was not restarted again. The memory info control is exposed in the installed window. No further recording or insertion into user documents was initiated for verification.
+
 ## Downloadable Swift prerelease — November 14, 2026
 
 [GitHub release `swift-v1.0.0-rc.1`](https://github.com/Akib306/open-wisper/releases/tag/swift-v1.0.0-rc.1) provides **Open-Wisper-Swift-1.0.0-rc.1-macos-arm64.zip** and `SHA256SUMS.txt`. The root README and Swift guide now lead with download-and-drag installation; build/provisioning commands are for developers. The public repository's release asset can be downloaded without a GitHub account.

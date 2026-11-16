@@ -30,7 +30,7 @@ public enum SessionPhase: String, Codable, Sendable, CaseIterable {
 }
 
 public enum DeliveryOutcome: String, Codable, Sendable {
-    case reviewReady, copied, insertionRequested, insertionVerified, blocked, cancelled, failed
+    case reviewReady, copied, copyFailed, insertionRequested, insertionVerified, blocked, cancelled, failed
 }
 
 public struct TargetToken: Hashable, Sendable {
@@ -296,7 +296,7 @@ public struct SessionMetrics: Codable, Sendable {
         guard !phase.isActive, !transcript.isEmpty else { return }
         deliveryResult = delivery.copy(transcript)
             ? DeliveryResult(.copied, "Copied. Other apps can read text on the clipboard.")
-            : DeliveryResult(.failed, "Couldn’t copy the transcript. Select the text and copy it manually.")
+            : DeliveryResult(.copyFailed, "Couldn’t copy the transcript. Select the text and copy it manually.")
     }
 
     public func captureFailed(sessionID: UUID, message: String) {

@@ -11,7 +11,7 @@ public struct IndicatorLayout: Equatable, Sendable {
         self.cameraWidth = 0
         self.cameraHeight = 0
         let preferredWidth: CGFloat
-        if feedback == .inserted || feedback == .cancelled { preferredWidth = 234 }
+        if feedback == .inserted || feedback == .copied || feedback == .cancelled { preferredWidth = 234 }
         else if feedback == .insertionRequested { preferredWidth = 280 }
         else if phase.isActive && phase != .recording { preferredWidth = 218 }
         else { preferredWidth = 248 }
@@ -24,11 +24,11 @@ public struct IndicatorLayout: Equatable, Sendable {
 }
 
 public enum IndicatorFeedback: Equatable, Sendable {
-    case hidden, active, review, inserted, insertionRequested, cancelled
+    case hidden, active, review, copied, inserted, insertionRequested, cancelled
 
     public init(phase: SessionPhase, needsReview: Bool, outcome: DeliveryOutcome?) {
         if phase.isActive { self = .active }
-        else if outcome == .copied { self = .hidden }
+        else if outcome == .copied { self = .copied }
         else if needsReview { self = .review }
         else if phase == .cancelled || outcome == .cancelled { self = .cancelled }
         else if outcome == .insertionVerified { self = .inserted }

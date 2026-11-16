@@ -211,7 +211,7 @@ import WisperCore
         indicatorFeedback = feedback
         if feedback != .hidden {
             showIndicator()
-            if feedback == .inserted || feedback == .insertionRequested || feedback == .cancelled {
+            if feedback == .inserted || feedback == .insertionRequested || feedback == .copied || feedback == .cancelled {
                 indicatorDismissal = Task { [weak self] in
                     do { try await Task.sleep(for: .seconds(1.8)) }
                     catch { return }

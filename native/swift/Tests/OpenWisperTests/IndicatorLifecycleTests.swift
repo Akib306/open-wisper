@@ -16,8 +16,8 @@ struct IndicatorLifecycleTests {
         try await wait { delegate.indicatorFeedback == .review }
 
         session.copyResult()
-        try await wait { delegate.indicatorFeedback == (copySucceeds ? .hidden : .review) }
-        #expect(session.deliveryResult?.outcome == (copySucceeds ? .copied : .failed))
+        try await wait { delegate.indicatorFeedback == (copySucceeds ? .copied : .review) }
+        #expect(session.deliveryResult?.outcome == (copySucceeds ? .copied : .copyFailed))
         #expect(!session.transcript.isEmpty)
 
         delegate.windowWillClose(Notification(name: NSWindow.willCloseNotification))
@@ -42,6 +42,20 @@ struct IndicatorLifecycleTests {
         try await wait { delegate.indicatorFeedback == .hidden }
     }
 
+    @Test func copyConfirmationDismissesWithoutClearingTheTranscript() async throws {
+        let session = session(copySucceeds: true)
+        let delegate = AppDelegate(model: AppModel(preview: true, previewSession: session))
+        session.start(configuration: configuration())
+        try await wait { session.phase == .recording }
+        session.stop()
+        try await wait { delegate.indicatorFeedback == .review }
+        session.copyResult()
+        try await wait { delegate.indicatorFeedback == .copied }
+        try await wait(timeout: .seconds(5)) { delegate.indicatorFeedback == .hidden }
+        #expect(!session.transcript.isEmpty)
+        await session.shutdown()
+    }
+
     private func session(copySucceeds: Bool) -> SessionCoordinator {
         SessionCoordinator(capture: PillCapture(), transcriber: PillTranscriber(),
             permissions: PillPermissions(), delivery: PillDelivery(copySucceeds: copySucceeds))
@@ -52,8 +66,8 @@ struct IndicatorLifecycleTests {
             automaticInsertion: automaticInsertion)
     }
 
-    private func wait(until predicate: () -> Bool) async throws {
-        let deadline = ContinuousClock.now.advanced(by: .seconds(2))
+    private func wait(timeout: Duration = .seconds(2), until predicate: () -> Bool) async throws {
+        let deadline = ContinuousClock.now.advanced(by: timeout)
         while !predicate() {
             guard ContinuousClock.now < deadline else { throw WisperError.message("Pill state did not settle.") }
             try await Task.sleep(for: .milliseconds(2))

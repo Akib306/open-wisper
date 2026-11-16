@@ -33,10 +33,11 @@ struct IndicatorPresentationTests {
         #expect(IndicatorFeedback(phase: .cancelled, needsReview: false, outcome: nil) == .cancelled)
     }
 
-    @Test func acknowledgedCopyHidesPillAndCancellationSurvivesIdle() {
-        #expect(IndicatorFeedback(phase: .idle, needsReview: true, outcome: .copied) == .hidden)
+    @Test func copyGetsVisibleFeedbackAndCancellationSurvivesIdle() {
+        #expect(IndicatorFeedback(phase: .idle, needsReview: true, outcome: .copied) == .copied)
         #expect(IndicatorFeedback(phase: .idle, needsReview: false, outcome: .cancelled) == .cancelled)
         #expect(IndicatorFeedback(phase: .idle, needsReview: true, outcome: .failed) == .review)
+        #expect(IndicatorFeedback(phase: .idle, needsReview: true, outcome: .copyFailed) == .review)
     }
 
     @Test func narrowNotchedDisplayUsesVisibleBottom() {

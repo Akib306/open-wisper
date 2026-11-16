@@ -25,7 +25,6 @@ private struct PebblePalette {
     @Environment(\.colorScheme) private var colorScheme
     @ObservedObject var navigationState = WindowNavigation()
     private var reviewSelected: Bool { navigationState.reviewSelected }
-    @State private var engineDetailsOpen = false
     private var palette: PebblePalette { PebblePalette(dark: colorScheme == .dark) }
 
     var body: some View {
@@ -40,37 +39,35 @@ private struct PebblePalette {
                 navigation("Ready", selected: !model.settingsOpen && !reviewSelected) {
                     model.settingsOpen = false; navigationState.reviewSelected = false
                 }
+                .keyboardShortcut("1", modifiers: [.command])
                 navigation("Review", selected: !model.settingsOpen && reviewSelected) {
                     model.settingsOpen = false; navigationState.reviewSelected = true
                 }
-                .disabled(session.transcript.isEmpty && session.failure == nil)
+                .disabled(session.phase.isActive)
+                .keyboardShortcut("2", modifiers: [.command])
                 navigation("Settings", selected: model.settingsOpen) {
                     model.settingsOpen = true; model.refreshPermissions()
                 }
+                .keyboardShortcut("3", modifiers: [.command])
             }
             .padding(3).background(palette.navigation, in: Capsule()).padding(.horizontal, 22)
             if model.settingsOpen {
                 SettingsView(model: model)
             } else {
-                ScrollView {
-                    VStack(spacing: 0) {
-                        if reviewSelected && !session.phase.isActive { review } else { ready }
-                        recovery
-                        if let memory = previewMemory ?? session.lastTranscriptionMemory {
-                            DisclosureGroup("Engine details", isExpanded: $engineDetailsOpen) {
-                                TranscriptionMemoryView(memory: memory)
-                                if let metrics = session.metrics {
-                                    Text(String(format: "%.1f s audio · %.1f s transcription", metrics.audioDuration, metrics.inferenceDuration))
-                                        .font(.caption.monospacedDigit()).foregroundStyle(palette.secondary)
-                                }
-                            }
-                            .font(.caption).padding(.top, 18)
+                VStack(spacing: 0) {
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            if reviewSelected && !session.phase.isActive { review } else { ready }
+                            recovery
                         }
-                        Label("On-device · No history", systemImage: "lock")
-                            .font(.caption).foregroundStyle(palette.secondary).padding(.top, 22)
+                        .padding(.horizontal, 26).padding(.top, 26).padding(.bottom, 24)
+                        .frame(maxWidth: .infinity)
                     }
-                    .padding(.horizontal, 26).padding(.top, 26).padding(.bottom, 24)
-                    .frame(maxWidth: .infinity)
+                    if reviewSelected && !session.phase.isActive && !session.transcript.isEmpty {
+                        reviewActions.padding(.horizontal, 26).padding(.bottom, 16)
+                    }
+                    TranscriptionMemoryView(memory: previewMemory ?? session.lastTranscriptionMemory, metrics: session.metrics, secondary: palette.secondary)
+                        .padding(.horizontal, 26).padding(.bottom, 18)
                 }
             }
         }
@@ -81,7 +78,6 @@ private struct PebblePalette {
         .onChange(of: session.failure) { _, failure in if failure != nil { navigationState.reviewSelected = true } }
         .onAppear {
             navigationState.reviewSelected = !session.transcript.isEmpty || session.failure != nil
-            engineDetailsOpen = previewMemory != nil
         }
     }
 
@@ -91,23 +87,27 @@ private struct PebblePalette {
                 .frame(maxWidth: .infinity).padding(.vertical, 8)
                 .background(selected ? palette.surface : Color.clear, in: Capsule())
         }
-        .buttonStyle(.plain).accessibilityAddTraits(selected ? .isSelected : [])
+        .buttonStyle(PebbleNavigationStyle()).accessibilityAddTraits(selected ? .isSelected : [])
+        .accessibilityLabel("\(title) tab")
     }
 
     private var ready: some View {
         VStack(spacing: 0) {
-            Text(session.phase == .recording ? "A thought in motion." : session.phase.isActive ? "Finding your words." : "A little space to speak.")
+            Text(session.phase == .recording ? "Recording" : session.phase.isActive ? session.phase.title : model.engineReady ? "Ready to\ndictate." : model.checkingEngine ? "Checking engine" : "Set up dictation")
                 .font(.system(size: 27, weight: .medium)).tracking(-0.6)
                 .frame(maxWidth: 250).multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
-            Text(session.phase.isActive ? activeDescription : "Say it naturally. Put your words where you’re already writing.")
+            Text(session.phase.isActive ? activeDescription : model.engineReady ? "Place your cursor, then use the shortcut." : "Choose a local model in Settings.")
                 .font(.system(size: 13)).lineSpacing(5).foregroundStyle(palette.secondary)
                 .frame(maxWidth: 270).multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 12)
-            Button { model.toggle() } label: {
+            Button {
+                if !session.phase.isActive && !model.engineReady { model.settingsOpen = true }
+                else { model.toggle() }
+            } label: {
                 VStack(spacing: 4) {
                     Image(systemName: session.phase == .recording ? "stop.fill" : session.phase.isActive ? "ellipsis" : "mic")
                         .font(.system(size: 22, weight: .medium)).accessibilityHidden(true)
-                    Text(session.phase == .recording ? "Stop" : session.phase.isActive ? "Working" : "Start")
+                    Text(session.phase == .recording ? "Stop" : session.phase.isActive ? "Working" : model.checkingEngine ? "Verifying" : model.engineReady ? "Start" : "Set up")
                         .font(.system(size: 11, weight: .semibold))
                 }
                 .frame(width: 76, height: 76)
@@ -115,10 +115,11 @@ private struct PebblePalette {
                 .background(session.phase == .recording ? palette.copperSurface : palette.teal, in: Circle())
                 .contentShape(Circle())
             }
-            .buttonStyle(.plain).padding(.top, 22)
-            .accessibilityLabel(session.phase == .recording ? "Stop recording" : session.phase.isActive ? "Processing dictation" : "Start dictation")
+            .buttonStyle(PebbleNavigationStyle()).padding(.top, 22)
+            .accessibilityLabel(session.phase == .recording ? "Stop recording" : session.phase.isActive ? session.phase.title : model.checkingEngine ? "Verifying engine" : model.engineReady ? "Start dictation" : "Set up local transcription")
+            .accessibilityHint(!model.engineReady && !session.phase.isActive ? "Opens Settings" : "")
             .keyboardShortcut(.return, modifiers: [.command])
-            .disabled((session.phase.isActive && session.phase != .recording) || (!model.engineReady && session.phase != .recording))
+            .disabled((session.phase.isActive && session.phase != .recording) || (!session.phase.isActive && model.checkingEngine))
             if session.phase == .recording, let started = session.recordingStartedAt {
                 Text(started, style: .timer).font(.caption.monospacedDigit()).foregroundStyle(palette.secondary).padding(.top, 10)
             } else if !session.phase.isActive {
@@ -141,23 +142,33 @@ private struct PebblePalette {
 
     private var review: some View {
         VStack(spacing: 14) {
-            Text(session.failure == nil ? "Your words, ready." : "Let’s try that again.")
+            Text(session.failure != nil ? "Dictation interrupted" : session.transcript.isEmpty ? "No transcript yet" : "Review transcript")
                 .font(.system(size: 24, weight: .medium)).tracking(-0.5).multilineTextAlignment(.center)
             if !session.transcript.isEmpty {
                 Text(session.transcript).textSelection(.enabled).font(.system(size: 15)).lineSpacing(7)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                Text(session.deliveryResult?.message ?? "Your transcript stays in memory until you dismiss it.")
+                Text(session.deliveryResult?.message ?? "Transcript ready to copy.")
                     .font(.caption).foregroundStyle(palette.secondary).fixedSize(horizontal: false, vertical: true)
-                HStack(spacing: 8) {
-                    Button("Dismiss") { session.dismissResult(); navigationState.reviewSelected = false }
-                        .buttonStyle(PebbleActionStyle(background: palette.navigation, foreground: palette.ink))
-                    Button(session.deliveryResult?.outcome == .copied ? "Copied" : "Copy text") { session.copyResult() }
-                        .buttonStyle(PebbleActionStyle(background: palette.teal, foreground: colorScheme == .dark ? palette.surface : .white))
-                        .keyboardShortcut("c", modifiers: [.command, .shift])
-                }
+                Text("Closing this window or starting a new recording clears this text.")
+                    .font(.caption).foregroundStyle(palette.secondary).fixedSize(horizontal: false, vertical: true)
             } else {
-                Button("Back to Ready") { session.dismissResult(); navigationState.reviewSelected = false }
+                if session.failure == nil {
+                    Text("Use your shortcut to start dictating.")
+                        .font(.callout).foregroundStyle(palette.secondary).multilineTextAlignment(.center)
+                }
+                Button("Go to Ready") { navigationState.reviewSelected = false }
             }
+        }
+    }
+
+    private var reviewActions: some View {
+        HStack(spacing: 8) {
+            Button("Clear") { session.dismissResult(); navigationState.reviewSelected = false }
+                .buttonStyle(PebbleActionStyle(background: palette.navigation, foreground: palette.ink))
+                .accessibilityLabel("Clear transcript")
+            Button(session.deliveryResult?.outcome == .copied ? "Copied" : copyFailed(session) ? "Try Copy again" : "Copy") { session.copyResult() }
+                .buttonStyle(PebbleActionStyle(background: palette.teal, foreground: colorScheme == .dark ? palette.surface : .white))
+                .keyboardShortcut("c", modifiers: [.command, .shift])
         }
     }
 
@@ -169,10 +180,6 @@ private struct PebblePalette {
                 .background(palette.copperSurface, in: RoundedRectangle(cornerRadius: 12))
                 .accessibilityLabel("Attention: \(message)").padding(.top, 18)
         }
-        if !model.engineReady && !session.phase.isActive {
-            Button(model.checkingEngine ? "Verifying local engine…" : "Set up local transcription") { model.settingsOpen = true }
-                .disabled(model.checkingEngine).padding(.top, 14)
-        }
         if model.settings.automaticInsertion && !model.permissions.accessibilityGranted && !session.phase.isActive {
             VStack(spacing: 6) {
                 Text("Allow Accessibility once so dictation can appear at your cursor.").fixedSize(horizontal: false, vertical: true)
@@ -183,9 +190,25 @@ private struct PebblePalette {
     }
 
     private var activeDescription: String {
+        if session.phase == .cancelling { return "Cleaning up this dictation." }
         if session.automaticallyStopped { return "The recording limit was reached. Finishing your transcript." }
-        if session.phase == .recording { return "Recording continues while this window is open. Press \(model.shortcutLabel) to stop." }
-        return "Transcribing on this Mac. You can cancel at any time."
+        if session.phase == .recording {
+            return model.settings.automaticInsertion
+                ? "Stop here to review or copy your transcript. Use \(model.shortcutLabel) in your editor to insert at the cursor."
+                : "Stop to review or copy your transcript."
+        }
+        return "You can cancel dictation at any time."
+    }
+}
+
+@MainActor private func copyFailed(_ session: SessionCoordinator) -> Bool {
+    session.deliveryResult?.outcome == .copyFailed
+}
+
+private struct PebbleNavigationStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.opacity(isEnabled ? (configuration.isPressed ? 0.7 : 1) : 0.45)
     }
 }
 
@@ -203,6 +226,8 @@ private struct PebbleActionStyle: ButtonStyle {
 
 private struct TranscriptionMemoryView: View {
     let memory: TranscriptionMemory?
+    let metrics: SessionMetrics?
+    let secondary: Color
     @State private var showsExplanation = false
 
     var body: some View {
@@ -214,20 +239,23 @@ private struct TranscriptionMemoryView: View {
                 Button { showsExplanation.toggle() } label: {
                     Image(systemName: "info.circle")
                 }
-                .buttonStyle(.plain).foregroundStyle(.secondary)
+                .buttonStyle(.plain).foregroundStyle(secondary)
                 .accessibilityLabel("About peak memory")
+                .accessibilityHint("Shows memory and session timing details")
                 .popover(isPresented: $showsExplanation) {
-                    Text("Maximum resident memory used by the transcription engine during its last completed run, reported by macOS when the worker exits. Includes the model and engine working memory. Excludes the app and system services. This is RSS, not Activity Monitor’s physical footprint. Kept until the next engine result or until you quit; nothing is saved to disk.")
-                        .font(.callout).padding(18).frame(width: 320)
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Maximum resident memory used by the transcription engine during its last completed run, reported by macOS when the worker exits. Includes the model and engine working memory. Excludes the app and system services. This is RSS, not Activity Monitor’s physical footprint. Kept until the next engine result or until you quit; nothing is saved to disk.")
+                        if let metrics {
+                            Text(String(format: "%.1f s audio · %.1f s transcription", metrics.audioDuration, metrics.inferenceDuration))
+                                .monospacedDigit()
+                        }
+                    }.font(.callout).padding(18).frame(width: 320)
                 }
                 Spacer(minLength: 8)
                 Text(memory?.formattedPeak ?? "—")
                     .font(.system(.title3, design: .rounded).weight(.semibold).monospacedDigit())
                     .textSelection(.enabled)
             }
-            Text(memory == nil ? "Appears after your first transcription." : "Last engine run · Peak resident memory")
-                .font(.caption).foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
         }
         .accessibilityElement(children: .contain)
     }
@@ -243,8 +271,6 @@ private struct TranscriptionMemoryView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                Text("Make it yours.").font(.system(size: 24, weight: .medium)).tracking(-0.5)
-                    .frame(maxWidth: .infinity).padding(.bottom, 2)
                 section("Transcription engine") {
                     Picker("Offline Whisper model", selection: Binding(
                         get: { model.settings.whisperModel ?? .base }, set: { model.chooseModel($0) }
@@ -256,9 +282,10 @@ private struct TranscriptionMemoryView: View {
                     }
                     .labelsHidden().pickerStyle(.menu).frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityLabel("Offline Whisper model")
-                    Text("Whisper runs offline on this Mac; this is not Apple Speech Recognition.")
-                        .font(.caption).foregroundStyle(palette.secondary).fixedSize(horizontal: false, vertical: true)
-                    DisclosureGroup("Engine profile", isExpanded: $engineDetails) {
+                    Text(model.checkingEngine ? "Verifying engine and model…" : model.engineReady ? "Engine ready" : "Engine unavailable. Open details to set up.")
+                        .font(.caption).foregroundStyle(model.engineReady || model.checkingEngine ? palette.secondary : palette.copper)
+                        .fixedSize(horizontal: false, vertical: true)
+                    DisclosureGroup("Engine details", isExpanded: $engineDetails) {
                         VStack(alignment: .leading, spacing: 8) {
                             Text(model.engineDescription).foregroundStyle(model.engineReady ? palette.secondary : palette.copper)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -297,7 +324,9 @@ private struct TranscriptionMemoryView: View {
                 section("Text delivery") {
                     Toggle("Insert at cursor when dictation stops", isOn: settingsBinding(\.automaticInsertion))
                         .toggleStyle(.checkbox)
-                    Text("Uses Accessibility and, when needed, Paste. Paste briefly uses the clipboard and restores it if nothing else copied. If the destination changes or cannot accept text, a quiet indicator offers Review or Copy.")
+                    Text("Accessibility: \(model.permissions.accessibilityGranted ? "Allowed" : "Needed for cursor insertion")")
+                        .font(.caption).foregroundStyle(palette.secondary)
+                    Text("Paste temporarily uses the clipboard and restores it only if nothing else was copied. If insertion fails, use Review or Copy.")
                         .font(.caption).foregroundStyle(palette.secondary).fixedSize(horizontal: false, vertical: true)
                     if model.settings.automaticInsertion && !model.permissions.accessibilityGranted {
                         Button("Enable cursor insertion…") { model.permissions.openAccessibilitySettings() }
@@ -306,7 +335,6 @@ private struct TranscriptionMemoryView: View {
                 Divider().overlay(palette.navigation)
                 section("Permissions") {
                     Text("Microphone: \(model.permissions.microphoneStatus)")
-                    Text("Accessibility: \(model.permissions.accessibilityGranted ? "Allowed" : "Needed for cursor insertion")")
                     HStack {
                         Button("Microphone settings…") { model.permissions.openMicrophoneSettings() }
                         Button("Refresh") { model.refreshPermissions() }
@@ -325,18 +353,20 @@ private struct TranscriptionMemoryView: View {
                             Text("2 minutes").tag(120.0)
                             Text("5 minutes").tag(300.0)
                         }
+                        Button("Reveal settings file") { model.revealSettings() }
                     }
                     .padding(.top, 8)
                 }
                 if let notice = model.notice {
                     Label(notice, systemImage: "exclamationmark.triangle").foregroundStyle(palette.copper)
                 }
-                Button("Reveal settings file") { model.revealSettings() }.font(.caption)
             }
             .font(.system(size: 12)).padding(26).frame(maxWidth: .infinity, alignment: .leading)
             .disabled(model.coordinator.phase.isActive)
         }
         .onAppear { engineDetails = !model.engineReady }
+        .onChange(of: model.engineReady) { _, ready in if !ready && !model.checkingEngine { engineDetails = true } }
+        .onChange(of: model.checkingEngine) { _, checking in if !checking && !model.engineReady { engineDetails = true } }
     }
 
     private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
@@ -381,7 +411,7 @@ private struct TranscriptionMemoryView: View {
             HStack(spacing: 5) {
                 Button(action: review) {
                     HStack(spacing: 7) {
-                        Image(systemName: session.phase == .recording ? "mic" : session.needsReview ? "text.alignleft" : feedback == .inserted ? "checkmark" : "waveform")
+                        Image(systemName: session.phase == .recording ? "mic" : feedback == .copied || feedback == .inserted ? "checkmark" : session.needsReview ? "text.alignleft" : "waveform")
                             .font(.system(size: 14)).foregroundStyle(Color(red: 0.71, green: 0.85, blue: 0.80))
                             .accessibilityHidden(true)
                         Text(title).font(.system(size: 12, weight: .medium)).lineLimit(1)
@@ -409,10 +439,12 @@ private struct TranscriptionMemoryView: View {
                     }
                     .buttonStyle(.plain).accessibilityLabel("Stop recording").help("Stop recording")
                 }
-                if !session.phase.isActive && session.needsReview && !session.transcript.isEmpty {
-                    Button("Copy", action: copy).font(.system(size: 11, weight: .medium))
+                if !session.phase.isActive && session.needsReview && !session.transcript.isEmpty && feedback != .copied {
+                    Button(copyFailed(session) ? "Retry" : "Copy", action: copy).font(.system(size: 11, weight: .medium))
                         .buttonStyle(.plain).padding(.horizontal, 7).frame(height: 26)
                         .background(.white.opacity(0.12), in: Capsule())
+                        .accessibilityLabel(copyFailed(session) ? "Retry Copy" : "Copy")
+                        .accessibilityHint("Copies the transcript to the clipboard")
                 }
                 Button(action: session.phase.isActive ? cancel : dismiss) {
                     Image(systemName: "xmark").font(.system(size: 11)).frame(width: 24, height: 28)
@@ -433,8 +465,13 @@ private struct TranscriptionMemoryView: View {
         if session.phase == .recording { return "Listening" }
         if session.phase == .preparing { return "Preparing" }
         if session.phase == .cancelling { return "Cancelling" }
+        if session.phase == .transcribing { return "Transcribing" }
+        if session.phase == .finalizing { return "Finishing" }
+        if session.phase == .transforming { return "Preparing text" }
+        if session.phase == .deliveryPending { return "Checking cursor" }
         if session.phase.isActive { return "Processing" }
-        if session.needsReview { return session.failure != nil ? "Interrupted" : "Review" }
+        if feedback == .copied { return "Copied" }
+        if session.needsReview { return copyFailed(session) ? "Copy failed" : session.failure != nil ? "Interrupted" : "Review" }
         if setupRequired { return "Set up engine" }
         switch feedback {
         case .inserted: return "Inserted"
