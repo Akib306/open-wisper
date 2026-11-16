@@ -4,6 +4,26 @@ import Testing
 import WisperCore
 @testable import WisperPlatform
 
+@Suite struct EnabledEligibilityTests {
+    @Test func unsupportedEnabledRequiresPositiveEditability() {
+        #expect(EnabledEligibility.permitsEditing(status: .attributeUnsupported, value: nil, editable: true))
+        #expect(!EnabledEligibility.permitsEditing(status: .attributeUnsupported, value: nil, editable: false))
+        #expect(!EnabledEligibility.permitsEditing(status: .attributeUnsupported, value: kCFBooleanFalse, editable: true))
+    }
+
+    @Test func explicitAndUnavailableValuesFailClosed() {
+        #expect(EnabledEligibility.permitsEditing(status: .success, value: kCFBooleanTrue, editable: true))
+        #expect(!EnabledEligibility.permitsEditing(status: .success, value: kCFBooleanTrue, editable: false))
+        #expect(!EnabledEligibility.permitsEditing(status: .success, value: kCFBooleanFalse, editable: true))
+        #expect(!EnabledEligibility.permitsEditing(status: .success, value: nil, editable: true))
+        #expect(!EnabledEligibility.permitsEditing(status: .success, value: "true" as CFString, editable: true))
+        for error: AXError in [.cannotComplete, .apiDisabled, .invalidUIElement, .noValue, .failure] {
+            #expect(!EnabledEligibility.permitsEditing(status: error, value: nil, editable: true))
+            #expect(!EnabledEligibility.permitsEditing(status: error, value: kCFBooleanTrue, editable: true))
+        }
+    }
+}
+
 @MainActor final class FakeInsertionSystem: TextInsertionSystem {
     var accessibilityGranted = true
     var focusFailureReason: String?

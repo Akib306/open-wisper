@@ -3,6 +3,14 @@ import ApplicationServices
 import Carbon
 import WisperCore
 
+enum EnabledEligibility {
+    static func permitsEditing(status: AXError, value: CFTypeRef?, editable: Bool) -> Bool {
+        if status == .attributeUnsupported { return value == nil && editable }
+        guard status == .success, let value, CFGetTypeID(value) == CFBooleanGetTypeID() else { return false }
+        return editable && CFEqual(value, kCFBooleanTrue)
+    }
+}
+
 struct FocusedTextTarget {
     let element: AXUIElement
     let context: InsertionContext
@@ -176,19 +184,31 @@ struct FocusedTextTarget {
         let systemWide = AXUIElementCreateSystemWide()
         AXUIElementSetMessagingTimeout(application, 0.25)
         AXUIElementSetMessagingTimeout(systemWide, 0.25)
-        func candidate(in root: AXUIElement, metadataKey: String) -> FocusedElementResolver.Candidate? {
-            guard let element = elementAttribute(root, kAXFocusedUIElementAttribute) else { return nil }
+        func describe(_ element: AXUIElement) -> FocusedElementResolver.Candidate {
             AXUIElementSetMessagingTimeout(element, 0.25)
             let role = stringAttribute(element, kAXRoleAttribute)
-            focusMetadata[metadataKey] = role ?? "unavailable"
             var pid: pid_t = 0
             let processID = AXUIElementGetPid(element, &pid) == .success ? pid : nil
             return .init(element: element, processID: processID, role: role)
         }
+        func candidate(in root: AXUIElement, metadataKey: String) -> FocusedElementResolver.Candidate? {
+            guard let element = elementAttribute(root, kAXFocusedUIElementAttribute) else {
+                focusMetadata[metadataKey] = "unavailable"
+                return nil
+            }
+            let result = describe(element)
+            focusMetadata[metadataKey] = result.role ?? "unavailable"
+            return result
+        }
         let global = candidate(in: systemWide, metadataKey: "systemFocusedRole")
         let local = candidate(in: application, metadataKey: "applicationFocusedRole")
         guard let resolved = FocusedElementResolver.resolve(systemWide: global, application: local,
-            processID: app.processIdentifier), let role = resolved.role else {
+            processID: app.processIdentifier, focusedChild: { candidate in
+                guard let child = elementAttribute(candidate.element, kAXFocusedUIElementAttribute) else { return nil }
+                let result = describe(child)
+                focusMetadata["nestedFocusedRole"] = result.role ?? "unavailable"
+                return result
+            }), let role = resolved.role else {
             return unavailable("No editable text field was focused when recording stopped.")
         }
         let element = resolved.element
@@ -202,12 +222,24 @@ struct FocusedTextTarget {
         // Query editability only; never read or replace the whole document value.
         let editable = selectedText || isSettable(element, kAXValueAttribute) ||
             attribute(element, "AXEditable").map { CFEqual($0, kCFBooleanTrue) } == true
-        let enabled = attribute(element, kAXEnabledAttribute).map { CFEqual($0, kCFBooleanTrue) } ?? false
+        var enabledValue: CFTypeRef?
+        let enabledStatus = AXUIElementCopyAttributeValue(element, kAXEnabledAttribute as CFString, &enabledValue)
+        let eligible = EnabledEligibility.permitsEditing(status: enabledStatus, value: enabledValue, editable: editable)
+        focusMetadata["selection"] = "available"
+        focusMetadata["selectedTextSettable"] = String(selectedText)
+        focusMetadata["editable"] = String(editable)
+        if enabledStatus == .attributeUnsupported && enabledValue == nil {
+            focusMetadata["enabled"] = "unsupported"
+        } else if enabledStatus == .success, let enabledValue, CFGetTypeID(enabledValue) == CFBooleanGetTypeID() {
+            focusMetadata["enabled"] = String(CFEqual(enabledValue, kCFBooleanTrue))
+        } else {
+            focusMetadata["enabled"] = "unavailable"
+        }
         guard let ancestry = secureAncestry(element) else { return unavailable("The editor did not expose whether this field is secure.") }
         return FocusedTextTarget(element: element,
             context: InsertionContext(processID: pid, processStartedAt: started, bundleID: bundle,
                 role: role, selectionLocation: range.location, selectionLength: range.length,
-                editable: enabled && editable, secure: ancestry.secure), supportsSelectedText: selectedText,
+                editable: eligible, secure: ancestry.secure), supportsSelectedText: selectedText,
             isWebContent: ancestry.webContent)
     }
 
