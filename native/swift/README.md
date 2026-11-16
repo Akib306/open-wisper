@@ -2,15 +2,15 @@
 
 Offline English dictation in a native macOS menu-bar app. Start and stop recording with a keyboard shortcut; transcription runs locally and follows the text field and selection captured at Stop. Review and Copy are available when insertion needs your attention.
 
-**Version 1.0.0, build 2 — release candidate.** See the [release record](../../docs/releases/swift-v1.0.0.md) for the final Swift scope, code-review findings, verification and pending live checks, the [changelog](CHANGELOG.md) for user-facing changes, and the [Rust handoff](../../docs/rust-handoff.md) for the next track.
+**Release candidate 1.0.0-rc.2 (bundle 1.0.0, build 2).** See the [release record](../../docs/releases/swift-v1.0.0.md) for the final Swift scope, code-review findings, verification and pending live checks, the [changelog](CHANGELOG.md) for user-facing changes, and the [Rust handoff](../../docs/rust-handoff.md) for the next track.
 
 ## Download and install
 
-**[Download the ready-to-run app for Apple Silicon](https://github.com/Akib306/open-wisper/releases/download/swift-v1.0.0-rc.1/Open-Wisper-Swift-1.0.0-rc.1-macos-arm64.zip)** (macOS 14+, approximately 610 MB). Unzip it, drag **Open Wisper Swift.app** to **Applications**, and open it there. The speech engine and all three models are included; no development tools or provisioning commands are required.
+**[Download the ready-to-run app for Apple Silicon](https://github.com/Akib306/open-wisper/releases/download/swift-v1.0.0-rc.2/Open-Wisper-Swift-1.0.0-rc.2-macos-arm64.zip)** (macOS 14+, approximately 610 MB). Unzip it, drag **Open Wisper Swift.app** to **Applications**, and open it there. The speech engine and all three models are included; no development tools or provisioning commands are required.
 
 This is an ad-hoc-signed, unnotarized preview. If macOS blocks the first launch and you trust the downloaded build, use **System Settings → Privacy & Security → Open Anyway**, then confirm Open. [Apple's instructions](https://support.apple.com/en-us/102445) explain the prompt. Grant microphone access on first recording and Accessibility for cursor insertion as described below. An Intel build is not available.
 
-Choose the app ZIP under [release assets](https://github.com/Akib306/open-wisper/releases/tag/swift-v1.0.0-rc.1), rather than GitHub's source-code archives. Updates use the same download-and-drag process after quitting the previous app. Keep a copy of the previous bundle if you need to roll back; macOS may require renewed consent for changed ad-hoc code.
+Choose the app ZIP under [release assets](https://github.com/Akib306/open-wisper/releases/tag/swift-v1.0.0-rc.2), rather than GitHub's source-code archives. Updates use the same download-and-drag process after quitting the previous app. Keep a copy of the previous bundle if you need to roll back; macOS may require renewed consent for changed ad-hoc code.
 
 ## Use
 
@@ -21,6 +21,8 @@ Choose the app ZIP under [release assets](https://github.com/Akib306/open-wisper
 
 At Start, the app asks the foreground editor to expose its accessibility tree using Electron’s documented `AXManualAccessibility` handshake; it repeats preparation if you switch apps while recording. This does not capture a destination until Stop. Focus resolution verifies the process owner, and the secure-field check supports deep editor layouts within a 128-parent and 250 ms traversal budget. Missing ancestry and secure fields still block insertion.
 
+Focus resolution follows explicit focused-child links through containers within the same process, bounded to 16 elements and 250 ms. A writable native text view may omit the optional `AXEnabled` attribute; that definitive unsupported response is accepted only with positive editability evidence. Explicit disabled states, malformed values, and other accessibility errors still block insertion.
+
 Paste temporarily puts the transcript on the clipboard. Up to 8 MiB, 16 items, and 32 types per item are preserved in memory; declared promised-file data is rejected. Text is supplied when requested, with a two-second request timeout and a 500 ms restoration grace period after a request. Ownership-marker reads do not consume text. The previous contents are restored only while the clipboard change count and the app’s unique marker still match. A newer user/app copy is left alone. A clipboard manager can also request text, so neither a data request nor the grace period proves insertion; external editors and clipboard managers still need compatibility testing. No request observed means an ambiguous outcome, not permission to retry automatically.
 
 The app never activates another app to deliver text, writes a whole document value, presses Return, submits a form, or retries an ambiguous insertion. Known terminals and secure fields are blocked. AX success or emitted Paste is an **insertion request**, not verified final text. A focus race across processes cannot be eliminated by these checks; live editor conformance remains a release gate.
@@ -29,9 +31,11 @@ The app never activates another app to deliver text, writes a whole document val
 
 Use **Command-comma** for Settings and **Command-Q** to quit. The Edit menu supports Copy and Select All in selectable text.
 
+Use **Command-1**, **Command-2**, and **Command-3** for Ready, Review, and Settings. **Command-Return** starts/stops from the window or opens engine setup when needed; **Command-Shift-C** copies in Review. Copy and Clear remain visible with long transcripts. Closing the window or starting a new recording clears the current transcript; no history is saved.
+
 ### Peak transcription memory
 
-The main window retains **Transcription peak** after the engine exits. This is the engine worker's maximum resident set size (RSS), collected with macOS `wait4` / `ru_maxrss` when reaping the process, including workers too brief to appear in Activity Monitor. It includes model and engine working memory, excludes the GUI and system services, and is not Activity Monitor's physical-footprint metric or a combined app-tree peak. macOS reports this value in bytes; the UI formats it using memory units.
+The Ready and Review screens keep **Transcription peak** visible in a footer, including at the minimum window size, with a placeholder before the first run. This is the engine worker's maximum resident set size (RSS), collected with macOS `wait4` / `ru_maxrss` when reaping the process, including workers too brief to appear in Activity Monitor. It includes model and engine working memory, excludes the GUI and system services, and is not Activity Monitor's physical-footprint metric or a combined app-tree peak. macOS reports this value in bytes; the UI formats it using memory units.
 
 The reading survives dismissing a transcript and starting or cancelling another recording. It is replaced when another engine run returns successfully; unavailable measurements are explicitly labeled. Failed/cancelled engine runs leave the previous reading intact. The value stays in memory only and resets when the app quits. The info button explains its scope.
 
@@ -97,9 +101,11 @@ native/swift/.build/debug/OpenWisper --render-indicator /tmp/open-wisper-process
 native/swift/.build/debug/OpenWisper --preview-ui --preview-state recording
 ```
 
-`--preview-memory` supplies an illustrative 128 MB reading for layout checks only. Add `--preview-light` or `--preview-compact` for light appearance or the 340 × 420 pt minimum content size. Pebble defaults to 360 × 480 pt; settings scroll rather than removing controls. Engine memory details are disclosed on demand. Offscreen bitmap renders check layout, not live focus or display safe areas.
+`--preview-memory` supplies an illustrative 128 MB reading for layout checks only. Add `--preview-light` or `--preview-compact` for light appearance or the 340 × 420 pt minimum content size. Pebble defaults to 360 × 480 pt; settings scroll rather than removing controls. The transcription peak and its pre-run placeholder are visible in the main window. Offscreen bitmap renders check layout, not live focus or display safe areas.
 
 `--preview-state` accepts `idle`, `recording`, `processing`, `review`, `failure`, or `cancelled`. `--render-indicator` previews the bottom pill. `--preview-ui` exercises the real AppKit indicator/window lifecycle with fake capture, permissions, transcription, and delivery: no audio capture, inference, clipboard writes, insertion, global-hotkey registration, or settings-file writes. Stop finishes a sample transcript after two seconds; Cancel discards it. Preview settings start from defaults, not personal settings. Do not use its OS permission setup controls for validation; permission and actual insertion checks belong to the packaged production app.
+
+Additional synthetic states are `long-review`, `copied`, and `copy-failed`. Copy success/failure in preview never changes the clipboard. `--preview-engine ready|missing|checking|failed` simulates engine availability; `--preview-wide` renders 900 × 720 pt. `--preview-ui --preview-state idle` explicitly opens the test window. The [November 15 UX audit](../../docs/research/ui-audit-2026-11-15.md) records scores, native screenshots and validation limits.
 
 ### Bottom pill and Pebble
 

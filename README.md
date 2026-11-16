@@ -4,9 +4,9 @@ Offline dictation for macOS. Record with a keyboard shortcut and insert the tran
 
 ## Download for macOS
 
-**[Download Open Wisper Swift — Apple Silicon](https://github.com/Akib306/open-wisper/releases/download/swift-v1.0.0-rc.1/Open-Wisper-Swift-1.0.0-rc.1-macos-arm64.zip)**
+**[Download Open Wisper Swift — Apple Silicon](https://github.com/Akib306/open-wisper/releases/download/swift-v1.0.0-rc.2/Open-Wisper-Swift-1.0.0-rc.2-macos-arm64.zip)**
 
-Requires an Apple Silicon Mac (M-series) with macOS 14 or later. This is the **1.0.0 release candidate, build 2**. The ZIP is approximately 610 MB and contains the app, speech engine, and all three English models. You do not need Xcode, Swift, Python, Homebrew, or separate model downloads.
+Requires an Apple Silicon Mac (M-series) with macOS 14 or later. This is the **1.0.0-rc.2 release candidate (bundle 1.0.0, build 2)**. The ZIP is approximately 610 MB and contains the app, speech engine, and all three English models. You do not need Xcode, Swift, Python, Homebrew, or separate model downloads.
 
 1. Download the app ZIP above and double-click it to extract **Open Wisper Swift.app**.
 2. Drag **Open Wisper Swift.app** into **Applications**, then open it there. Its controls live in the menu bar.
@@ -15,9 +15,9 @@ Requires an Apple Silicon Mac (M-series) with macOS 14 or later. This is the **1
 
 This preview is ad-hoc signed and is **not notarized by Apple**. If macOS blocks the first launch and you choose to trust this build, open **System Settings → Privacy & Security → Open Anyway**, then confirm Open. See [Apple's guidance](https://support.apple.com/en-us/102445). No Terminal commands or system-wide security changes are needed.
 
-[Release notes and checksum](https://github.com/Akib306/open-wisper/releases/tag/swift-v1.0.0-rc.1) · [App guide](native/swift/README.md#use) · [Changelog](native/swift/CHANGELOG.md)
+[Release notes and checksum](https://github.com/Akib306/open-wisper/releases/tag/swift-v1.0.0-rc.2) · [App guide](native/swift/README.md#use) · [Changelog](native/swift/CHANGELOG.md)
 
-In the release's Assets list, choose **Open-Wisper-Swift-1.0.0-rc.1-macos-arm64.zip**. GitHub's **Source code (zip)** and **Source code (tar.gz)** downloads contain source code rather than the app. This build is for Apple Silicon; an Intel download is not available.
+In the release's Assets list, choose **Open-Wisper-Swift-1.0.0-rc.2-macos-arm64.zip**. GitHub's **Source code (zip)** and **Source code (tar.gz)** downloads contain source code rather than the app. This build is for Apple Silicon; an Intel download is not available.
 
 The default model is `base.en`; Settings also offers `tiny.en-q5_1` and `small.en`. Model comparisons and the pending live acceptance checks are recorded in the [release record](docs/releases/swift-v1.0.0.md). An independent [Rust developer preview](native/rust/README.md) is also implemented; the Electron MVP remains a reference. The downloadable release above is the Swift application, not Rust.
 

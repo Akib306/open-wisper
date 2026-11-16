@@ -1,5 +1,18 @@
 # Open Wisper Swift changelog
 
+## 1.0.0-rc.2 — November 15, 2026
+
+The UI and cursor-delivery update is available as [GitHub prerelease `swift-v1.0.0-rc.2`](https://github.com/Akib306/open-wisper/releases/tag/swift-v1.0.0-rc.2). It packages the verified installed build without rebuilding or re-signing; bundle metadata remains 1.0.0/build 2. The first candidate remains available under its original tag.
+
+### Fixed
+
+- Simplify dictation and Settings copy, show actionable engine setup, and keep Copy/Clear visible with long transcripts.
+- Show brief Copied feedback and a retryable Copy failure in the bottom pill while retaining the current-session privacy rules.
+- Add Command-1/2/3 navigation for Ready, Review and Settings; retain visible transcription peak memory.
+- Resolve text inputs exposed through focused accessibility containers while retaining destination and selection checks.
+- Accept writable native text views that do not implement the optional Accessibility enabled attribute; explicit disabled states and failed reads still block insertion.
+- Keep the last transcription's peak memory visible in Ready and Review, including at the minimum window size and before the first run.
+
 ## 1.0.0 — release candidate, November 14, 2026
 
 The final Swift feature baseline before independent Rust development. See the [release record](../../docs/releases/swift-v1.0.0.md) for verification and pending live acceptance. The ready-to-run Apple Silicon app is available as [GitHub prerelease `swift-v1.0.0-rc.1`](https://github.com/Akib306/open-wisper/releases/tag/swift-v1.0.0-rc.1); stable acceptance remains pending.

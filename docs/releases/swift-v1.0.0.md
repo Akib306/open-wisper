@@ -1,8 +1,25 @@
 # Open Wisper Swift 1.0.0
 
-Status: **downloadable release candidate; final live acceptance is pending**. [GitHub prerelease `swift-v1.0.0-rc.1`](https://github.com/Akib306/open-wisper/releases/tag/swift-v1.0.0-rc.1) distributes the ready-to-run Apple Silicon app. Version 1 closes the Swift feature baseline before work on the independent Rust app. The bundle identifies itself as **1.0.0, build 2**, with bundle ID `dev.akib.openwisper.swift`; this prerelease does not claim every acceptance scenario has passed.
+Status: **downloadable release candidate; final live acceptance is pending**. [GitHub prerelease `swift-v1.0.0-rc.2`](https://github.com/Akib306/open-wisper/releases/tag/swift-v1.0.0-rc.2) distributes the ready-to-run Apple Silicon app. Version 1 closes the Swift feature baseline before work on the independent Rust app. The bundle identifies itself as **1.0.0, build 2**, with bundle ID `dev.akib.openwisper.swift`; this prerelease does not claim every acceptance scenario has passed.
 
-## Download and install
+## Current candidate — November 15, 2026
+
+**[Download Open Wisper Swift 1.0.0-rc.2](https://github.com/Akib306/open-wisper/releases/download/swift-v1.0.0-rc.2/Open-Wisper-Swift-1.0.0-rc.2-macos-arm64.zip)** for Apple Silicon, macOS 14+. Extract the ZIP, quit the previous app after keeping any wanted transcript, and drag **Open Wisper Swift.app** into Applications. The engine and all three English models are included. The ad-hoc-signed app is not notarized; follow the [first-launch instructions](../../README.md#download-for-macos) if macOS blocks it. Updates can require renewed Accessibility consent.
+
+This candidate includes the [November 15 UI simplification](../research/ui-audit-2026-11-15.md), visible transcription memory, Copy confirmation/retry, keyboard navigation, and native/nested focused-field delivery fixes. **117 Swift tests across 22 suites passed** on this source, including native keyboard journeys and a mutation-checked Copy dismissal regression. This publication reused the verified installed bundle without rebuilding, re-signing, relaunching, or changing permissions.
+
+| Artifact | Identity |
+| --- | --- |
+| Release tag / matching source | [`swift-v1.0.0-rc.2`](https://github.com/Akib306/open-wisper/tree/swift-v1.0.0-rc.2) |
+| App archive | `Open-Wisper-Swift-1.0.0-rc.2-macos-arm64.zip` — 610,194,316 bytes |
+| Archive SHA-256 | `9c55d245d42ba015061463727e9db287ee19462b9194b2277f1a16fe688e6a0b` |
+| App executable SHA-256 | `a80305cf0cfa08b000326923673ac63c01348c419d0603d9d24083a44ca95c98` |
+| Bundle metadata | 1.0.0 / build 2, retained to distribute the exact installed binary; the candidate tag distinguishes this update. |
+| Companion assets | `SHA256SUMS.txt`, `BUILD-INFO.json` |
+
+Fresh extraction preserved executable permissions, bundle metadata, third-party notices, all three relocated engine/model profile checks, and strict recursive signature verification. The running installed app also confirmed Accessibility allowed and automatic insertion enabled after explicit user approval; this readiness check does not establish end-to-end dictation. The existing live acceptance matrix below remains open, so this stays a **prerelease**. The first candidate's tag and asset bytes remain unchanged.
+
+## First candidate — November 14, 2026
 
 [Download the app ZIP](https://github.com/Akib306/open-wisper/releases/download/swift-v1.0.0-rc.1/Open-Wisper-Swift-1.0.0-rc.1-macos-arm64.zip), extract it, drag **Open Wisper Swift.app** into **Applications**, and open it there. The download includes the worker and all three models. End users need no compiler, package manager, provisioning command, or separate model download. See the [installation and first-launch instructions](../../README.md#download-for-macos) for the ad-hoc-signing prompt and macOS permissions.
 
@@ -100,4 +117,4 @@ For an eventual installation, preserve any wanted transcript, quit the existing 
 
 Hold/Fn-only shortcuts, device selection, VAD/streaming/resident inference, multilingual profiles, history, snippets/rewrite, launch-at-login, OTA updates, notarized public distribution, and controlled language/engine benchmarks remain outside Swift v1. The preview is downloadable while the declared live matrix remains pending; it is not a fully accepted stable release. The upstream whisper.cpp public security-advisory API returned no published entries on November 14, 2026; this is a check of that inventory, not a complete vulnerability assessment. A project-wide source distribution license remains unselected; the bundled third-party notices are included.
 
-The downloadable candidate uses `swift-v1.0.0-rc.1`, targeting the reviewed source at `3482c4d`. Reserve `swift-v1.0.0` for stable acceptance; do not move the candidate tag or replace its asset bytes silently. Future versions receive a new tag and artifact/checksum. Continue with the [Rust handoff](../rust-handoff.md), carrying the behavior contract and unresolved checks forward.
+The first downloadable candidate uses `swift-v1.0.0-rc.1`, targeting the reviewed source at `3482c4d`; the current UI/delivery candidate uses `swift-v1.0.0-rc.2` and its matching source tag. Reserve `swift-v1.0.0` for stable acceptance; do not move the candidate tag or replace its asset bytes silently. Future versions receive a new tag and artifact/checksum. Continue with the [Rust handoff](../rust-handoff.md), carrying the behavior contract and unresolved checks forward.
